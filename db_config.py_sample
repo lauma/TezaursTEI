@@ -4,6 +4,7 @@
 ## lai konfigurētu DB savienojumu:
 ##  1) pārkopēt šo failu ar nosaukumu db_config.py
 ##  2) ievietot db_connection_info laukos atbilstošo savienojuma informāciju (hostname, ...)
+##  3) schema ir tezaurs/mlvv/llvv, šeit doto izmanto tad, ja komandrindā nekas nav padots.
 
 db_connection_info = {
     "host":     "localhost", 
