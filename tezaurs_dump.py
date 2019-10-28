@@ -63,7 +63,7 @@ ORDER BY human_id
             result = {'id': row.human_id}
             lexeme = fetch_lexeme(row.primary_lexeme_id, row.human_id)
             if not lexeme:
-                break
+                continue
             result['lemma'] = lexeme.lemma
             if lexeme.data and 'Gram' in lexeme.data:
                 gram = lexeme.data['Gram']
@@ -85,19 +85,21 @@ ORDER BY human_id
 
 def fetch_lexeme(lexeme_id, entry_human_id):
     if not lexeme_id:
+        print(f'No primary lexeme id for entry {entry_human_id}!')
         return
     lex_cursor = connection.cursor(cursor_factory=NamedTupleCursor)
     sql_primary_lex = f"""
-SELECT id, lemma, data FROM {db_connection_info['schema']}.lexemes
+SELECT id, lemma, data
+FROM {db_connection_info['schema']}.lexemes
 WHERE id = {lexeme_id}
 """
     lex_cursor.execute(sql_primary_lex)
     lexemes = lex_cursor.fetchall()
-    if not lexemes:
-        print(f'No primary lexeme for entry {entry_human_id}!\n')
+    if not lexemes or len(lexemes) < 1:
+        print(f'No primary lexeme for entry {entry_human_id}!')
         return
     if len(lexemes) > 1:
-        print(f'Too many primary lexemes for entry {entry_human_id}!\n')
+        print(f'Too many primary lexemes for entry {entry_human_id}!')
     return lexemes[0]
 
 
@@ -147,6 +149,7 @@ def dump_entries(filename):
             f.write('\t\t</entry>\n')
         f.write('\t</body>')
         f.write('</TEI>\n')
+
 
 if len(sys.argv) > 1:
     schema = sys.argv[1]
