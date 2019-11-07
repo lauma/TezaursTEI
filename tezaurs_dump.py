@@ -84,7 +84,7 @@ ORDER BY human_id
                     result['pos_text'] = gram['FlagText']
                 elif 'FreeText' in gram and db_connection_info['schema'] != 'tezaurs':
                     result['pos_text'] = gram['FreeText']
-            senses = fetch_senses(row.id, row.human_id)
+            senses = fetch_senses(row.id)
             if senses:
                 result['senses'] = senses
             yield result
@@ -111,7 +111,7 @@ WHERE id = {lexeme_id}
     return lexemes[0]
 
 
-def fetch_senses(entry_id, entry_human_id):
+def fetch_senses(entry_id):
     if not entry_id:
         return
     sense_cursor = connection.cursor(cursor_factory=NamedTupleCursor)
@@ -126,7 +126,7 @@ ORDER BY order_no
         return
     result = []
     for sense in senses:
-        #sense_data = json.loads(sense.data)
+        # sense_data = json.loads(sense.data)
         result.append({'id': sense.order_no, 'gloss': sense.gloss})
     return result
 
@@ -138,7 +138,7 @@ def dump_entries(filename):
         f.write('\t<teiHeader>TODO</teiHeader>\n')
         f.write('\t<body>\n')
         for entry in fetch_entries():
-            if not whitelist is None and not whitelist.check(entry["lemma"], entry["hom_id"]):
+            if whitelist is not None and not whitelist.check(entry["lemma"], entry["hom_id"]):
                 continue
             entry_id = f'{schema}/{entry["id"]}'
             f.write(f'\t\t<entry id={quoteattr(entry_id)}>\n')
@@ -148,7 +148,7 @@ def dump_entries(filename):
                 if 'pos' in entry:
                     for g in entry['pos']:
                         f.write(f'\t\t\t\t\t<gram type="pos">{escape(g)}</gram>\n')
-                    #f.write(f'\t\t\t\t\t<gram>{"; ".join(entry["pos"])}</gram>\n')
+                    # f.write(f'\t\t\t\t\t<gram>{"; ".join(entry["pos"])}</gram>\n')
                 elif 'pos_text' in entry:
                     f.write(f'\t\t\t\t\t<gram>{escape(entry["pos_text"])}</gram>\n')
                 f.write('\t\t\t\t</gramGrp>\n')
@@ -171,7 +171,7 @@ if len(sys.argv) > 2:
     if len(whitelist.entries) < 1:
         whitelist = None
 filename_infix = ""
-if not whitelist is None:
+if whitelist is not None:
     filename_infix = "_filtered"
 db_connect()
 filename = f'{db_connection_info["schema"]}_tei{filename_infix}.xml'
