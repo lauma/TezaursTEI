@@ -1,5 +1,7 @@
+mlvv_tei.xml
+llvv_tei.xml
 tezaurs_tei.xml
-tezaurs_tei.zip
+*.zip
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

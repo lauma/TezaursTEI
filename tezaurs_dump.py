@@ -1,12 +1,18 @@
 #!/usr/bin/env python3
+from EntryWhitelist import EntryWhitelist
 from db_config import db_connection_info
 
 import psycopg2
 from psycopg2.extras import NamedTupleCursor
 import sys
+from xml.sax.saxutils import escape
+from xml.sax.saxutils import quoteattr
 
 connection = None
 schema = None
+whitelist = None
+
+omit_pot_wordparts = True
 
 
 def db_connect():
@@ -60,9 +66,12 @@ ORDER BY human_id
         if not rows:
             break
         for row in rows:
-            result = {'id': row.human_id}
+            counter = counter + 1
+            result = {'id': row.human_id, 'hom_id': row.homonym_id}
             lexeme = fetch_lexeme(row.primary_lexeme_id, row.human_id)
             if not lexeme:
+                continue
+            if omit_pot_wordparts and (lexeme.lemma.startswith('-') or lexeme.lemma.endswith('-')):
                 continue
             result['lemma'] = lexeme.lemma
             if lexeme.data and 'Gram' in lexeme.data:
@@ -79,7 +88,6 @@ ORDER BY human_id
             if senses:
                 result['senses'] = senses
             yield result
-            counter = counter + 1
         print(f'{counter}\r')
 
 
@@ -130,21 +138,25 @@ def dump_entries(filename):
         f.write('\t<teiHeader>TODO</teiHeader>\n')
         f.write('\t<body>\n')
         for entry in fetch_entries():
-            f.write(f'\t\t<entry id="{schema}/{entry["id"]}">\n')
-            f.write(f'\t\t\t<form type="lemma">{entry["lemma"]}</form>\n')
+            if not whitelist is None and not whitelist.check(entry["lemma"], entry["hom_id"]):
+                continue
+            entry_id = f'{schema}/{entry["id"]}'
+            f.write(f'\t\t<entry id={quoteattr(entry_id)}>\n')
+            f.write(f'\t\t\t<form type="lemma">{escape(entry["lemma"])}</form>\n')
             if 'pos' in entry or 'pos_text' in entry:
                 f.write('\t\t\t\t<gramGrp>\n')
                 if 'pos' in entry:
                     for g in entry['pos']:
-                        f.write(f'\t\t\t\t\t<gram>{g}</gram>\n')
+                        f.write(f'\t\t\t\t\t<gram type="pos">{escape(g)}</gram>\n')
                     #f.write(f'\t\t\t\t\t<gram>{"; ".join(entry["pos"])}</gram>\n')
                 elif 'pos_text' in entry:
-                    f.write(f'\t\t\t\t\t<gram>{entry["pos_text"]}</gram>\n')
+                    f.write(f'\t\t\t\t\t<gram>{escape(entry["pos_text"])}</gram>\n')
                 f.write('\t\t\t\t</gramGrp>\n')
             if 'senses' in entry:
                 for sense in entry["senses"]:
-                    f.write(f'\t\t\t\t<sense id="{schema}/{entry["id"]}/{sense["id"]}">\n')
-                    f.write(f'\t\t\t\t\t<def>{sense["gloss"]}</def>\n')
+                    sense_id = f'{schema}/{entry["id"]}/{sense["id"]}'
+                    f.write(f'\t\t\t\t<sense id={quoteattr(sense_id)}>\n')
+                    f.write(f'\t\t\t\t\t<def>{escape(sense["gloss"])}</def>\n')
                     f.write('\t\t\t\t</sense>\n')
             f.write('\t\t</entry>\n')
         f.write('\t</body>')
@@ -153,7 +165,15 @@ def dump_entries(filename):
 
 if len(sys.argv) > 1:
     schema = sys.argv[1]
+if len(sys.argv) > 2:
+    whitelist = EntryWhitelist()
+    whitelist.load(sys.argv[2])
+    if len(whitelist.entries) < 1:
+        whitelist = None
+filename_infix = ""
+if not whitelist is None:
+    filename_infix = "_filtered"
 db_connect()
-filename = f'{db_connection_info["schema"]}_tei.xml'
+filename = f'{db_connection_info["schema"]}_tei{filename_infix}.xml'
 dump_entries(filename)
 print(f'Done! Output written to {filename}')
