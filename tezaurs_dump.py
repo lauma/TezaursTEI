@@ -94,6 +94,8 @@ ORDER BY human_key
                     result['pos_text'] = gram['FlagText']
                 if 'FreeText' in gram and db_connection_info['schema'] != 'tezaurs':
                     result['pos_text'] = gram['FreeText']
+            if lexeme.data and 'Pronunciations' in lexeme.data:
+                result['pronun'] = lexeme.data['Pronunciations']
             senses = fetch_senses(row.id)
             if senses:
                 result['senses'] = senses
@@ -122,13 +124,16 @@ WHERE l.id = {lexeme_id}
     return lexemes[0]
 
 
-def fetch_senses(entry_id):
+def fetch_senses(entry_id, parent_sense_id=None):
     if not entry_id:
         return
     sense_cursor = connection.cursor(cursor_factory=NamedTupleCursor)
+    parent_sense_clause = 'is NULL'
+    if parent_sense_id:
+        parent_sense_clause = f"""= {parent_sense_id}"""
     sql_senses = f"""
-SELECT gloss, order_no, parent_sense_id FROM {db_connection_info['schema']}.senses
-WHERE entry_id = {entry_id} and parent_sense_id is NULL
+SELECT id, gloss, order_no, parent_sense_id FROM {db_connection_info['schema']}.senses
+WHERE entry_id = {entry_id} and parent_sense_id {parent_sense_clause}
 ORDER BY order_no
 """
     sense_cursor.execute(sql_senses)
@@ -138,7 +143,11 @@ ORDER BY order_no
     result = []
     for sense in senses:
         # sense_data = json.loads(sense.data)
-        result.append({'id': sense.order_no, 'gloss': sense.gloss})
+        subsenses = fetch_senses(entry_id, sense.id)
+        sense_dict = {'ord': sense.order_no, 'gloss': sense.gloss}
+        if subsenses:
+            sense_dict['subsenses'] = subsenses
+        result.append(sense_dict)
     return result
 
 
@@ -162,25 +171,41 @@ def dump_entries(filename):
                 f.write(f'\t\t<entry id={quoteattr(entry_id)} type={quoteattr("foreign")}>\n')
             else:
                 f.write(f'\t\t<entry id={quoteattr(entry_id)} type={quoteattr("main")}>\n')
-            f.write(f'\t\t\t<form type="lemma">{escape(entry["lemma"])}</form>\n')
+            f.write('\t\t\t<form type="lemma">\n')
+            f.write(f'\t\t\t\t<orth>{escape(entry["lemma"])}</orth>\n')
+            if 'pronun' in entry:
+                for pronun in entry['pronun']:
+                    f.write(f'\t\t\t\t<pron>{escape(pronun)}</pron>\n')
+            f.write('\t\t\t</form>\n')
             if 'pos' in entry or 'pos_text' in entry:
-                f.write('\t\t\t\t<gramGrp>\n')
+                f.write('\t\t\t<gramGrp>\n')
                 if 'pos' in entry:
                     for g in entry['pos']:
-                        f.write(f'\t\t\t\t\t<gram type="pos">{escape(g)}</gram>\n')
+                        f.write(f'\t\t\t\t<gram type="pos">{escape(g)}</gram>\n')
                     # f.write(f'\t\t\t\t\t<gram>{"; ".join(entry["pos"])}</gram>\n')
                 elif 'pos_text' in entry:
-                    f.write(f'\t\t\t\t\t<gram>{escape(entry["pos_text"])}</gram>\n')
-                f.write('\t\t\t\t</gramGrp>\n')
+                    f.write(f'\t\t\t\t<gram>{escape(entry["pos_text"])}</gram>\n')
+                f.write('\t\t\t</gramGrp>\n')
             if 'senses' in entry:
-                for sense in entry["senses"]:
-                    sense_id = f'{schema}/{entry["id"]}/{sense["id"]}'
-                    f.write(f'\t\t\t\t<sense id={quoteattr(sense_id)}>\n')
-                    f.write(f'\t\t\t\t\t<def>{escape(sense["gloss"])}</def>\n')
-                    f.write('\t\t\t\t</sense>\n')
+                for sense in entry['senses']:
+                    dump_sense(f, sense, '\t\t\t', f'{schema}/{entry["id"]}')
+                    #sense_id = f'{schema}/{entry["id"]}/{sense["id"]}'
+                    #f.write(f'\t\t\t\t<sense id={quoteattr(sense_id)}>\n')
+                    #f.write(f'\t\t\t\t\t<def>{escape(sense["gloss"])}</def>\n')
+                    #f.write('\t\t\t\t</sense>\n')
             f.write('\t\t</entry>\n')
         f.write('\t</body>')
         f.write('</TEI>\n')
+
+def dump_sense(filestream, sense, indent, id_stub):
+    sense_id = f'{id_stub}/{sense["ord"]}'
+    sense_ord = f'sense["ord"]'
+    filestream.write(f'{indent}<sense id={quoteattr(sense_id)} n={quoteattr(sense_ord)}>\n')
+    filestream.write(f'{indent}\t<def>{escape(sense["gloss"])}</def>\n')
+    if 'subsenses' in sense:
+        for subsense in sense['subsenses']:
+            dump_sense(filestream, subsense, indent+'\t', sense_id)
+    filestream.write(f'{indent}</sense>\n')
 
 
 if len(sys.argv) > 1:
