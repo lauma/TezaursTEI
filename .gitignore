@@ -1,6 +1,5 @@
-mlvv_tei.xml
-llvv_tei.xml
-tezaurs_tei.xml
+*_tei.xml
+*_tei_filtered.xml
 *.zip
 
 # Byte-compiled / optimized / DLL files

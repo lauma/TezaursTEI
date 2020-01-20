@@ -12,7 +12,7 @@ connection = None
 schema = None
 whitelist = None
 
-omit_pot_wordparts = True
+omit_pot_wordparts = False
 
 
 def db_connect():
@@ -50,12 +50,15 @@ def query(sql, parameters):
 def fetch_entries():
     global connection
     entry_cursor = connection.cursor(cursor_factory=NamedTupleCursor)
+    where_clause = """et.name = 'word'"""
+    if not omit_pot_wordparts:
+        where_clause = where_clause + """ or et.name = 'wordPart'"""
     sql_entries = f"""
-SELECT e.id, type_id, name as type_name, human_id, homonym_id, primary_lexeme_id
+SELECT e.id, type_id, name as type_name, human_key, homonym_no, primary_lexeme_id
 FROM {db_connection_info['schema']}.entries e
 JOIN {db_connection_info['schema']}.entry_types et ON e.type_id = et.id
-WHERE et.name = 'word'
-ORDER BY human_id
+WHERE {where_clause}
+ORDER BY human_key
 """
     # TODO - filtrs uz e.release_id lai ņemtu svaigāko relīzi nevis visas
 
@@ -67,22 +70,29 @@ ORDER BY human_id
             break
         for row in rows:
             counter = counter + 1
-            result = {'id': row.human_id, 'hom_id': row.homonym_id}
-            lexeme = fetch_lexeme(row.primary_lexeme_id, row.human_id)
+            result = {'id': row.human_key, 'hom_id': row.homonym_no, 'type': row.type_name}
+            lexeme = fetch_lexeme(row.primary_lexeme_id, row.human_key)
             if not lexeme:
                 continue
-            if omit_pot_wordparts and (lexeme.lemma.startswith('-') or lexeme.lemma.endswith('-')):
+            if omit_pot_wordparts and (row.type_name == 'wordPart' or lexeme.lemma.startswith('-') or lexeme.lemma.endswith('-')):
                 continue
             result['lemma'] = lexeme.lemma
+            if lexeme.paradigm_data and 'Vārdšķira' in lexeme.paradigm_data:
+                result['pos'] = [lexeme.paradigm_data['Vārdšķira']]
+                if 'Reziduāļa tips' in lexeme.paradigm_data:
+                    result['pos'] = result['pos'] + lexeme.paradigm_data['Reziduāļa tips']
+                # FIXME izņemt pēc DB update
+                if 'Darbības vārda tips' in lexeme.paradigm_data:
+                    result['pos'].append('Darbības vārds')
             if lexeme.data and 'Gram' in lexeme.data:
                 gram = lexeme.data['Gram']
-                if 'Flags' in gram and 'Kategorija' in gram['Flags'] and not(
-                        'Citi' in gram['Flags'] and
-                        'Neviennozīmīga vārdšķira vai kategorija' in gram['Flags']['Citi']):
+                if 'Flags' in gram and 'Kategorija' in gram['Flags'] and gram['Flags']['Kategorija']:
                     result['pos'] = gram['Flags']['Kategorija']
-                elif 'FlagText' in gram:
+                if 'Flags' in gram and 'Citi' in gram['Flags'] and 'Neviennozīmīga vārdšķira vai kategorija' in gram['Flags']['Citi']:
+                    result['pos'] = []
+                if 'FlagText' in gram and db_connection_info['schema'] != 'tezaurs':
                     result['pos_text'] = gram['FlagText']
-                elif 'FreeText' in gram and db_connection_info['schema'] != 'tezaurs':
+                if 'FreeText' in gram and db_connection_info['schema'] != 'tezaurs':
                     result['pos_text'] = gram['FreeText']
             senses = fetch_senses(row.id)
             if senses:
@@ -91,23 +101,24 @@ ORDER BY human_id
         print(f'{counter}\r')
 
 
-def fetch_lexeme(lexeme_id, entry_human_id):
+def fetch_lexeme(lexeme_id, entry_human_key):
     if not lexeme_id:
-        print(f'No primary lexeme id for entry {entry_human_id}!')
+        print(f'No primary lexeme id for entry {entry_human_key}!')
         return
     lex_cursor = connection.cursor(cursor_factory=NamedTupleCursor)
     sql_primary_lex = f"""
-SELECT id, lemma, data
-FROM {db_connection_info['schema']}.lexemes
-WHERE id = {lexeme_id}
+SELECT l.id, lemma, paradigm_id, l.data, p.data as paradigm_data
+FROM {db_connection_info['schema']}.lexemes l
+LEFT OUTER JOIN {db_connection_info['schema']}.paradigms p ON l.paradigm_id = p.id
+WHERE l.id = {lexeme_id}
 """
     lex_cursor.execute(sql_primary_lex)
     lexemes = lex_cursor.fetchall()
     if not lexemes or len(lexemes) < 1:
-        print(f'No primary lexeme for entry {entry_human_id}!')
+        print(f'No primary lexeme for entry {entry_human_key}!')
         return
     if len(lexemes) > 1:
-        print(f'Too many primary lexemes for entry {entry_human_id}!')
+        print(f'Too many primary lexemes for entry {entry_human_key}!')
     return lexemes[0]
 
 
@@ -141,7 +152,16 @@ def dump_entries(filename):
             if whitelist is not None and not whitelist.check(entry["lemma"], entry["hom_id"]):
                 continue
             entry_id = f'{schema}/{entry["id"]}'
-            f.write(f'\t\t<entry id={quoteattr(entry_id)}>\n')
+            if (entry['hom_id'] > 0):
+                f.write(f'\t\t<entry id={quoteattr(entry_id)} type={quoteattr("hom")}>\n')
+            elif (entry['lemma'] and 'pos' in entry and 'Vārda daļa' in entry['pos']):
+                f.write(f'\t\t<entry id={quoteattr(entry_id)} type={quoteattr("affix")}>\n')
+            elif (entry['lemma'] and 'pos' in entry and 'Saīsinājums' in entry['pos']):
+                f.write(f'\t\t<entry id={quoteattr(entry_id)} type={quoteattr("abbr")}>\n')
+            elif (entry['lemma'] and 'pos' in entry and 'Vārds svešvalodā' in entry['pos']):
+                f.write(f'\t\t<entry id={quoteattr(entry_id)} type={quoteattr("foreign")}>\n')
+            else:
+                f.write(f'\t\t<entry id={quoteattr(entry_id)} type={quoteattr("main")}>\n')
             f.write(f'\t\t\t<form type="lemma">{escape(entry["lemma"])}</form>\n')
             if 'pos' in entry or 'pos_text' in entry:
                 f.write('\t\t\t\t<gramGrp>\n')
