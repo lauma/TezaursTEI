@@ -3,7 +3,7 @@ REM Whitelist format: each line contains one allowed entryword and optional tab-
 python tezaurs_dump.py mlvv whitelist100.txt
 python tezaurs_dump.py tezaurs whitelist100.txt
 
-REM Dumping whole dictionary (only entries of type "word").
+REM Dumping whole dictionary (mwe entries excluded).
 python tezaurs_dump.py mlvv
 python tezaurs_dump.py llvv
 python tezaurs_dump.py tezaurs

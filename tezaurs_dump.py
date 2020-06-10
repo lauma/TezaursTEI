@@ -54,7 +54,7 @@ def fetch_entries():
     if not omit_pot_wordparts:
         where_clause = where_clause + """ or et.name = 'wordPart'"""
     sql_entries = f"""
-SELECT e.id, type_id, name as type_name, human_key, homonym_no, primary_lexeme_id
+SELECT e.id, type_id, name as type_name, human_key, homonym_no, primary_lexeme_id, e.data->>'Etymology' as etym
 FROM {db_connection_info['schema']}.entries e
 JOIN {db_connection_info['schema']}.entry_types et ON e.type_id = et.id
 WHERE {where_clause}
@@ -71,6 +71,8 @@ ORDER BY human_key
         for row in rows:
             counter = counter + 1
             result = {'id': row.human_key, 'hom_id': row.homonym_no, 'type': row.type_name}
+            if row.etym:
+                result['etym'] = row.etym
             lexeme = fetch_lexeme(row.primary_lexeme_id, row.human_key)
             if not lexeme:
                 continue
@@ -189,10 +191,10 @@ def dump_entries(filename):
             if 'senses' in entry:
                 for sense in entry['senses']:
                     dump_sense(f, sense, '\t\t\t', f'{schema}/{entry["id"]}')
-                    #sense_id = f'{schema}/{entry["id"]}/{sense["id"]}'
-                    #f.write(f'\t\t\t\t<sense id={quoteattr(sense_id)}>\n')
-                    #f.write(f'\t\t\t\t\t<def>{escape(sense["gloss"])}</def>\n')
-                    #f.write('\t\t\t\t</sense>\n')
+            if 'etym' in entry:
+                etym_text = escape(entry["etym"])
+                etym_text = etym_text.replace('&lt;em&gt;', '<mentioned>').replace('&lt;/em&gt;', '</mentioned>')
+                f.write(f'\t\t\t<etym>{etym_text}</etym>\n')
             f.write('\t\t</entry>\n')
         f.write('\t</body>')
         f.write('</TEI>\n')
@@ -201,7 +203,8 @@ def dump_sense(filestream, sense, indent, id_stub):
     sense_id = f'{id_stub}/{sense["ord"]}'
     sense_ord = f'sense["ord"]'
     filestream.write(f'{indent}<sense id={quoteattr(sense_id)} n={quoteattr(sense_ord)}>\n')
-    filestream.write(f'{indent}\t<def>{escape(sense["gloss"])}</def>\n')
+    gloss_text = escape(sense["gloss"]).replace('&lt;em&gt;', '<mentioned>').replace('&lt;/em&gt;', '</mentioned>')
+    filestream.write(f'{indent}\t<def>{gloss_text}</def>\n')
     if 'subsenses' in sense:
         for subsense in sense['subsenses']:
             dump_sense(filestream, subsense, indent+'\t', sense_id)
