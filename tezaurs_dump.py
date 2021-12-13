@@ -201,7 +201,7 @@ def dump_entries(filename):
 
 def dump_sense(filestream, sense, indent, id_stub):
     sense_id = f'{id_stub}/{sense["ord"]}'
-    sense_ord = f'sense["ord"]'
+    sense_ord = f'{sense["ord"]}'
     filestream.write(f'{indent}<sense id={quoteattr(sense_id)} n={quoteattr(sense_ord)}>\n')
     gloss_text = escape(sense["gloss"]).replace('&lt;em&gt;', '<mentioned>').replace('&lt;/em&gt;', '</mentioned>')
     filestream.write(f'{indent}\t<def>{gloss_text}</def>\n')
