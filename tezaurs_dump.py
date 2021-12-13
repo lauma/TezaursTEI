@@ -9,24 +9,23 @@ from xml.sax.saxutils import escape
 from xml.sax.saxutils import quoteattr
 
 connection = None
-schema = None
+dbname = None
 whitelist = None
 
 omit_pot_wordparts = False
 
-
 def db_connect():
     global connection
-    global schema
+    global dbname
 
     if db_connection_info is None or db_connection_info["host"] is None or len(db_connection_info["host"]) == 0:
         print("Postgres connection error: connection information must be supplied in db_config")
         raise Exception("Postgres connection error: connection information must be supplied in <conn_info>")
 
-    if schema:
-        db_connection_info['schema'] = schema
+    if dbname:
+        db_connection_info['dbname'] = dbname
     else:
-        schema = db_connection_info['schema']
+        dbname = db_connection_info['dbname']
     print(f'Connecting to database {db_connection_info["dbname"]}, schema {db_connection_info["schema"]}')
     connection = psycopg2.connect(
             host=db_connection_info['host'],
@@ -82,7 +81,8 @@ ORDER BY human_key
             if lexeme.paradigm_data and 'Vārdšķira' in lexeme.paradigm_data:
                 result['pos'] = [lexeme.paradigm_data['Vārdšķira']]
                 if 'Reziduāļa tips' in lexeme.paradigm_data:
-                    result['pos'] = result['pos'] + lexeme.paradigm_data['Reziduāļa tips']
+                    #result['pos'] = result['pos'] + lexeme.paradigm_data['Reziduāļa tips']
+                    result['pos'].append(lexeme.paradigm_data['Reziduāļa tips'])
                 # FIXME izņemt pēc DB update
                 if 'Darbības vārda tips' in lexeme.paradigm_data:
                     result['pos'].append('Darbības vārds')
@@ -162,7 +162,7 @@ def dump_entries(filename):
         for entry in fetch_entries():
             if whitelist is not None and not whitelist.check(entry["lemma"], entry["hom_id"]):
                 continue
-            entry_id = f'{schema}/{entry["id"]}'
+            entry_id = f'{dbname}/{entry["id"]}'
             if (entry['hom_id'] > 0):
                 f.write(f'\t\t<entry id={quoteattr(entry_id)} type={quoteattr("hom")}>\n')
             elif (entry['lemma'] and 'pos' in entry and 'Vārda daļa' in entry['pos']):
@@ -190,7 +190,7 @@ def dump_entries(filename):
                 f.write('\t\t\t</gramGrp>\n')
             if 'senses' in entry:
                 for sense in entry['senses']:
-                    dump_sense(f, sense, '\t\t\t', f'{schema}/{entry["id"]}')
+                    dump_sense(f, sense, '\t\t\t', f'{dbname}/{entry["id"]}')
             if 'etym' in entry:
                 etym_text = escape(entry["etym"])
                 etym_text = etym_text.replace('&lt;em&gt;', '<mentioned>').replace('&lt;/em&gt;', '</mentioned>')
@@ -212,7 +212,7 @@ def dump_sense(filestream, sense, indent, id_stub):
 
 
 if len(sys.argv) > 1:
-    schema = sys.argv[1]
+    dbname = sys.argv[1]
 if len(sys.argv) > 2:
     whitelist = EntryWhitelist()
     whitelist.load(sys.argv[2])
@@ -222,6 +222,6 @@ filename_infix = ""
 if whitelist is not None:
     filename_infix = "_filtered"
 db_connect()
-filename = f'{db_connection_info["schema"]}_tei{filename_infix}.xml'
+filename = f'{db_connection_info["dbname"]}_tei{filename_infix}.xml'
 dump_entries(filename)
 print(f'Done! Output written to {filename}')

@@ -4,14 +4,13 @@
 ## lai konfigurētu DB savienojumu:
 ##  1) pārkopēt šo failu ar nosaukumu db_config.py
 ##  2) ievietot db_connection_info laukos atbilstošo savienojuma informāciju (hostname, ...)
-##  3) schema ir tezaurs/mlvv/llvv, šeit doto izmanto tad, ja komandrindā nekas nav padots.
+##  3) db name nosaka, kuru vārdnīcu lietos
 
 db_connection_info = {
     "host":     "localhost", 
     "port":     5432, 
-    "dbname":   "",
-    "schema":   "tezaurs",
-    
+    "dbname":   "tezaurs_dv",
+    "schema":   "dict",
     "user":     "postgres", 
     "password": "",
 }
