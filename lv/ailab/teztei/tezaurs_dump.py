@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-from EntryWhitelist import EntryWhitelist
-from db_config import db_connection_info
+from lv.ailab.teztei.whitelist import EntryWhitelist
+from lv.ailab.teztei.db_config import db_connection_info
 
 import psycopg2
 from psycopg2.extras import NamedTupleCursor
