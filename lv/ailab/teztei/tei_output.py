@@ -1,66 +1,108 @@
-from xml.sax.saxutils import escape
-from xml.sax.saxutils import quoteattr
+import re
+from xml.sax.saxutils import XMLGenerator
 
 class TEI_Writer:
     def __init__(self, file, dict_id, whitelist=None):
         self.file = file
         self.dict_id = dict_id
         self.whitelist = whitelist
+        self.gen = XMLGenerator(file, 'UTF-8', True)
+        self.xml_depth = 0
+
+    def _start_node(self, name, attrs):
+        self.gen.ignorableWhitespace('\t'*self.xml_depth)
+        self.gen.startElement(name, attrs)
+        self.gen.ignorableWhitespace('\n')
+        self.xml_depth = self.xml_depth + 1
+
+    def _end_node(self, name):
+        self.gen.ignorableWhitespace('\t'*self.xml_depth)
+        self.gen.endElement(name)
+        self.gen.ignorableWhitespace('\n')
+        self.xml_depth = self.xml_depth - 1
+
+    def _do_leaf_node(self, name, attrs, content, mentions=False):
+        self.gen.ignorableWhitespace('\t' * self.xml_depth)
+        self.gen.startElement(name, attrs)
+        if mentions:
+            self._do_content_with_mentions(content)
+        else:
+            self.gen.characters(content)
+        self.gen.endElement(name)
+        self.gen.ignorableWhitespace('\n')
+
+    def _do_content_with_mentions(self, content):
+        parts = re.split('</?(?:em|i)>', content)
+        is_mentioned = False
+        if re.match('^</?(?:em|i)>', content):
+            is_mentioned = True
+            self.gen.startElement('mentioned', {})
+        self.gen.characters(parts.pop(0))
+        for part in parts:
+            if is_mentioned:
+                self.gen.endElement('mentioned')
+                is_mentioned = False
+            else:
+                self.gen.startElement('mentioned', {})
+                is_mentioned = True
+            self.gen.characters(part)
+        if is_mentioned:
+            self.gen.endElement(is_mentioned)
 
     def print_head(self):
-        self.file.write('<TEI>\n')
-        self.file.write('\t<teiHeader>TODO</teiHeader>\n')
-        self.file.write('\t<body>\n')
+        self.gen.startDocument()
+        self._start_node('TEI', {})
+        self._do_leaf_node('teiHeader', {}, 'TODO')
+        self._start_node('body', {})
 
     def print_tail(self):
-        self.file.write('\t</body>')
-        self.file.write('</TEI>\n')
+        self._end_node('body')
+        self._end_node('TEI')
+        self.gen.endDocument()
 
     def print_entry(self, entry):
         if self.whitelist is not None and not self.whitelist.check(entry["lemma"], entry["hom_id"]):
             return
         entry_id = f'{self.dict_id}/{entry["id"]}'
-        if (entry['hom_id'] > 0):
-            self.file.write(f'\t\t<entry id={quoteattr(entry_id)} type={quoteattr("hom")}>\n')
-        elif (entry['lemma'] and 'pos' in entry and 'Vārda daļa' in entry['pos']):
-            self.file.write(f'\t\t<entry id={quoteattr(entry_id)} type={quoteattr("affix")}>\n')
-        elif (entry['lemma'] and 'pos' in entry and 'Saīsinājums' in entry['pos']):
-            self.file.write(f'\t\t<entry id={quoteattr(entry_id)} type={quoteattr("abbr")}>\n')
-        elif (entry['lemma'] and 'pos' in entry and 'Vārds svešvalodā' in entry['pos']):
-            self.file.write(f'\t\t<entry id={quoteattr(entry_id)} type={quoteattr("foreign")}>\n')
-        else:
-            self.file.write(f'\t\t<entry id={quoteattr(entry_id)} type={quoteattr("main")}>\n')
-        self.file.write('\t\t\t<form type="lemma">\n')
-        self.file.write(f'\t\t\t\t<orth>{escape(entry["lemma"])}</orth>\n')
+        self._start_node('entry', {'id': entry_id})
+        #FIXME homonīmi un tipi
+        #if (entry['hom_id'] > 0):
+        #    self.file.write(f'\t\t<entry id={quoteattr(entry_id)} type={quoteattr("hom")}>\n')
+        #elif (entry['lemma'] and 'pos' in entry and 'Vārda daļa' in entry['pos']):
+        #    self.file.write(f'\t\t<entry id={quoteattr(entry_id)} type={quoteattr("affix")}>\n')
+        #elif (entry['lemma'] and 'pos' in entry and 'Saīsinājums' in entry['pos']):
+        #    self.file.write(f'\t\t<entry id={quoteattr(entry_id)} type={quoteattr("abbr")}>\n')
+        #elif (entry['lemma'] and 'pos' in entry and 'Vārds svešvalodā' in entry['pos']):
+        #    self.file.write(f'\t\t<entry id={quoteattr(entry_id)} type={quoteattr("foreign")}>\n')
+        #else:
+        #    self.file.write(f'\t\t<entry id={quoteattr(entry_id)} type={quoteattr("main")}>\n')
+        self._start_node('form', {'type': 'lemma'})
+        self._do_leaf_node('orth', {}, entry['lemma'])
         if 'pronun' in entry:
             for pronun in entry['pronun']:
-                self.file.write(f'\t\t\t\t<pron>{escape(pronun)}</pron>\n')
-        self.file.write('\t\t\t</form>\n')
+                self._do_leaf_node('pron', {}, pronun)
+        self._end_node('form')
         if 'pos' in entry or 'pos_text' in entry:
-            self.file.write('\t\t\t<gramGrp>\n')
+            self._start_node('gramGrp', {})
             if 'pos' in entry:
-                for g in entry['pos']:
-                    self.file.write(f'\t\t\t\t<gram type="pos">{escape(g)}</gram>\n')
-                # self.file.write(f'\t\t\t\t\t<gram>{"; ".join(entry["pos"])}</gram>\n')
+                for g in set(entry['pos']):
+                    self._do_leaf_node('gram', {'type': 'pos'}, g)
             elif 'pos_text' in entry:
-                self.file.write(f'\t\t\t\t<gram>{escape(entry["pos_text"])}</gram>\n')
-            self.file.write('\t\t\t</gramGrp>\n')
+                self._do_leaf_node('gram', {}, entry['pos_text'])
+            self._end_node('gramGrp')
         if 'senses' in entry:
             for sense in entry['senses']:
                 self.print_sense(sense, '\t\t\t', f'{self.dict_id}/{entry["id"]}')
         if 'etym' in entry:
-            etym_text = escape(entry["etym"])
-            etym_text = etym_text.replace('&lt;em&gt;', '<mentioned>').replace('&lt;/em&gt;', '</mentioned>')
-            self.file.write(f'\t\t\t<etym>{etym_text}</etym>\n')
-        self.file.write('\t\t</entry>\n')
+            self._do_leaf_node('etym', {}, entry['etym'], True)
+        self._end_node('entry')
 
     def print_sense(self, sense, indent, id_stub):
         sense_id = f'{id_stub}/{sense["ord"]}'
         sense_ord = f'{sense["ord"]}'
-        self.file.write(f'{indent}<sense id={quoteattr(sense_id)} n={quoteattr(sense_ord)}>\n')
-        gloss_text = escape(sense["gloss"]).replace('&lt;em&gt;', '<mentioned>').replace('&lt;/em&gt;', '</mentioned>')
-        self.file.write(f'{indent}\t<def>{gloss_text}</def>\n')
+        self._start_node('sense', {'id': sense_id, 'n': sense_ord})
+        self._do_leaf_node('def', {}, sense['gloss'], True)
         if 'subsenses' in sense:
             for subsense in sense['subsenses']:
                 self.print_sense(subsense, indent + '\t', sense_id)
-        self.file.write(f'{indent}</sense>\n')
+        self._end_node('sense')
