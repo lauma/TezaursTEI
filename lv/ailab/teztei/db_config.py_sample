@@ -6,6 +6,8 @@
 ##  2) ievietot db_connection_info laukos atbilstošo savienojuma informāciju (hostname, ...)
 ##  3) db name nosaka, kuru vārdnīcu lietos
 
+# TODO pārvietot šo uz config kaut kā smuki.
+
 db_connection_info = {
     "host":     "localhost", 
     "port":     5432, 
