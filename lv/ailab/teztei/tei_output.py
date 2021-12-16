@@ -1,6 +1,9 @@
 import re
 from xml.sax.saxutils import XMLGenerator
 
+indent_char = "  "
+newline_char = "\n"
+
 class TEI_Writer:
     def __init__(self, file, dict_id, whitelist=None):
         self.file = file
@@ -10,26 +13,32 @@ class TEI_Writer:
         self.xml_depth = 0
 
     def _start_node(self, name, attrs):
-        self.gen.ignorableWhitespace('\t'*self.xml_depth)
+        global indent_char
+        global newline_char
+        self.gen.ignorableWhitespace(indent_char*self.xml_depth)
         self.gen.startElement(name, attrs)
-        self.gen.ignorableWhitespace('\n')
+        self.gen.ignorableWhitespace(newline_char)
         self.xml_depth = self.xml_depth + 1
 
     def _end_node(self, name):
-        self.gen.ignorableWhitespace('\t'*self.xml_depth)
-        self.gen.endElement(name)
-        self.gen.ignorableWhitespace('\n')
+        global indent_char
+        global newline_char
         self.xml_depth = self.xml_depth - 1
+        self.gen.ignorableWhitespace(indent_char*self.xml_depth)
+        self.gen.endElement(name)
+        self.gen.ignorableWhitespace(newline_char)
 
     def _do_leaf_node(self, name, attrs, content, mentions=False):
-        self.gen.ignorableWhitespace('\t' * self.xml_depth)
+        global indent_char
+        global newline_char
+        self.gen.ignorableWhitespace(indent_char * self.xml_depth)
         self.gen.startElement(name, attrs)
         if mentions:
             self._do_content_with_mentions(content)
         else:
             self.gen.characters(content)
         self.gen.endElement(name)
-        self.gen.ignorableWhitespace('\n')
+        self.gen.ignorableWhitespace(newline_char)
 
     def _do_content_with_mentions(self, content):
         parts = re.split('</?(?:em|i)>', content)
