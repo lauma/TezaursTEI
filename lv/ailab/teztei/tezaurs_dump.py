@@ -7,6 +7,13 @@ from lv.ailab.teztei.whitelist import EntryWhitelist
 import psycopg2
 import sys
 
+# Major TODOs:
+# - export synset relations
+# - export gradsets
+# - export MWE entries
+# - export all lexemes
+# - migrate to hard sense IDs
+
 connection = None
 dbname = None
 whitelist = None

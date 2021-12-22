@@ -21,7 +21,7 @@ def fetch_entries(connection, omit_pot_wordparts):
 SELECT e.id, type_id, name as type_name, human_key, homonym_no, primary_lexeme_id, e.data->>'Etymology' as etym
 FROM {db_connection_info['schema']}.entries e
 JOIN {db_connection_info['schema']}.entry_types et ON e.type_id = et.id
-WHERE {where_clause}
+WHERE ({where_clause}) and NOT e.hidden
 ORDER BY human_key
 """
 
@@ -78,7 +78,7 @@ def fetch_lexeme(connection, lexeme_id, entry_human_key):
 SELECT l.id, lemma, paradigm_id, l.data, p.data as paradigm_data
 FROM {db_connection_info['schema']}.lexemes l
 LEFT OUTER JOIN {db_connection_info['schema']}.paradigms p ON l.paradigm_id = p.id
-WHERE l.id = {lexeme_id}
+WHERE l.id = {lexeme_id} and NOT l.hidden
 """
     lex_cursor.execute(sql_primary_lex)
     lexemes = lex_cursor.fetchall()
@@ -98,8 +98,9 @@ def fetch_senses(connection, entry_id, parent_sense_id=None):
     if parent_sense_id:
         parent_sense_clause = f"""= {parent_sense_id}"""
     sql_senses = f"""
-SELECT id, gloss, order_no, parent_sense_id FROM {db_connection_info['schema']}.senses
-WHERE entry_id = {entry_id} and parent_sense_id {parent_sense_clause}
+SELECT id, gloss, order_no, parent_sense_id, synset_id
+FROM {db_connection_info['schema']}.senses
+WHERE entry_id = {entry_id} and parent_sense_id {parent_sense_clause} and NOT hidden
 ORDER BY order_no
 """
     sense_cursor.execute(sql_senses)
@@ -111,7 +112,32 @@ ORDER BY order_no
         # sense_data = json.loads(sense.data)
         subsenses = fetch_senses(connection, entry_id, sense.id)
         sense_dict = {'ord': sense.order_no, 'gloss': sense.gloss}
+        if sense.synset_id:
+            sense_dict['synset_id'] = sense.synset_id
+            sense_dict['synset_senses'] = fetch_synset_info(connection, sense.synset_id)
         if subsenses:
             sense_dict['subsenses'] = subsenses
         result.append(sense_dict)
+    return result
+
+
+def fetch_synset_info (connection, synset_id):
+    if not synset_id:
+        return
+    synset_cursor = connection.cursor(cursor_factory=NamedTupleCursor)
+    sql_synset_senses = f"""
+SELECT syn.id, s.id as sense_id, s.order_no as sense_no, e.human_key as entry_hk
+FROM dict.synsets syn
+RIGHT OUTER JOIN dict.senses s ON syn.id = s.synset_id
+JOIN dict.entries e ON s.entry_id = e.id
+WHERE syn.id = {synset_id} and NOT s.hidden
+ORDER BY e.type_id, entry_hk
+"""
+    synset_cursor.execute(sql_synset_senses)
+    synset_members = synset_cursor.fetchall()
+    if not synset_members:
+        return
+    result = []
+    for member in synset_members:
+        result.append({'softid': f'{member.entry_hk}/{member.sense_no}', 'hardid': member.sense_id})
     return result
