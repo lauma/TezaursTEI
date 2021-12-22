@@ -112,7 +112,7 @@ class TEI_Writer:
         self._start_node('sense', {'id': sense_id, 'n': sense_ord})
         self._do_leaf_node('def', {}, sense['gloss'], True)
         if 'synset_id' in sense and 'synset_senses' in sense:
-            self._start_node('xr', {'type': 'synset', id: f'{self.dict_id}/synset:{sense["synset_id"]}'})
+            self._start_node('xr', {'type': 'synset', 'id': f'{self.dict_id}/synset:{sense["synset_id"]}'})
             for synset_sense in sense['synset_senses']:
                 #TODO use hard ids when those are fixed
                 self._do_leaf_node('ref', {}, f'{self.dict_id}/{synset_sense["softid"]}')
