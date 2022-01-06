@@ -115,11 +115,6 @@ class TEI_Writer:
 
             self.print_synset_related(sense['synset_id'], sense['synset_senses'], sense['synset_rels'],
                                       sense['gradset'])
-            #self._start_node('xr', {'type': 'synset', 'id': f'{self.dict_id}/synset:{sense["synset_id"]}'})
-            #for synset_sense in sense['synset_senses']:
-            #    #TODO use hard ids when those are fixed
-            #    self._do_leaf_node('ref', {}, f'{self.dict_id}/{synset_sense["softid"]}')
-            #self._end_node('xr')
         if 'subsenses' in sense:
             for subsense in sense['subsenses']:
                 self.print_sense(subsense, sense_id)
