@@ -101,23 +101,48 @@ class TEI_Writer:
             self._end_node('gramGrp')
         if 'senses' in entry:
             for sense in entry['senses']:
-                self.print_sense(sense, '\t\t\t', f'{self.dict_id}/{entry["id"]}')
+                self.print_sense(sense, f'{self.dict_id}/{entry["id"]}')
         if 'etym' in entry:
             self._do_leaf_node('etym', {}, entry['etym'], True)
         self._end_node('entry')
 
-    def print_sense(self, sense, indent, id_stub):
+    def print_sense(self, sense, id_stub):
         sense_id = f'{id_stub}/{sense["ord"]}'
         sense_ord = f'{sense["ord"]}'
         self._start_node('sense', {'id': sense_id, 'n': sense_ord})
         self._do_leaf_node('def', {}, sense['gloss'], True)
-        if 'synset_id' in sense and 'synset_senses' in sense:
-            self._start_node('xr', {'type': 'synset', 'id': f'{self.dict_id}/synset:{sense["synset_id"]}'})
-            for synset_sense in sense['synset_senses']:
-                #TODO use hard ids when those are fixed
-                self._do_leaf_node('ref', {}, f'{self.dict_id}/{synset_sense["softid"]}')
-            self._end_node('xr')
+        if 'synset_id' in sense:# and 'synset_senses' in sense:
+
+            self.print_synset_related(sense['synset_id'], sense['synset_senses'], sense['synset_rels'],
+                                      sense['gradset'])
+            #self._start_node('xr', {'type': 'synset', 'id': f'{self.dict_id}/synset:{sense["synset_id"]}'})
+            #for synset_sense in sense['synset_senses']:
+            #    #TODO use hard ids when those are fixed
+            #    self._do_leaf_node('ref', {}, f'{self.dict_id}/{synset_sense["softid"]}')
+            #self._end_node('xr')
         if 'subsenses' in sense:
             for subsense in sense['subsenses']:
-                self.print_sense(subsense, indent + '\t', sense_id)
+                self.print_sense(subsense, sense_id)
         self._end_node('sense')
+
+    def print_synset_related(self, synset_id, synset_senses, synset_rels, gradset):
+        if synset_senses:
+            self._start_node('xr', {'type': 'synset', 'id': f'{self.dict_id}/synset:{synset_id}'})
+            for synset_sense in synset_senses:
+                # TODO use hard ids when those are fixed
+                self._do_leaf_node('ref', {}, f'{self.dict_id}/{synset_sense["softid"]}')
+            self._end_node('xr')
+        if synset_rels:
+            for synset_rel in synset_rels:
+                self._start_node('xr', {'type': f'{synset_rel["other_name"]}'})
+                self._do_leaf_node('ref', {}, f'{self.dict_id}/synset:{synset_rel["other"]}')
+                self._end_node('xr')
+        if gradset:
+            self._start_node('xr', {'type': 'gradation_set', 'id': f'{self.dict_id}/gradset:{gradset["gradset_id"]}'})
+            for synset in gradset['member_synsets']:
+                self._do_leaf_node('ref', {}, f'{self.dict_id}/synset:{synset}')
+            self._end_node('xr')
+            if gradset['gradset_cat']:
+                self._start_node('xr', {'type': 'gradation_set_category'})
+                self._do_leaf_node('ref', {}, f'{self.dict_id}/synset:{gradset["gradset_cat"]}')
+                self._end_node('xr')
