@@ -138,6 +138,6 @@ class TEI_Writer:
                 self._do_leaf_node('ref', {}, f'{self.dict_id}/synset:{synset}')
             self._end_node('xr')
             if gradset['gradset_cat']:
-                self._start_node('xr', {'type': 'gradation_set_category'})
+                self._start_node('xr', {'type': 'gradation_class'})
                 self._do_leaf_node('ref', {}, f'{self.dict_id}/synset:{gradset["gradset_cat"]}')
                 self._end_node('xr')
