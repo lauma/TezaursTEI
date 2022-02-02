@@ -73,7 +73,19 @@ class TEI_Writer:
         if self.whitelist is not None and not self.whitelist.check(entry["lemma"], entry["hom_id"]):
             return
         entry_id = f'{self.dict_id}/{entry["id"]}'
-        self._start_node('entry', {'id': entry_id})
+        entry_params = {'id': entry_id}
+        if (entry['hom_id'] > 0):
+            entry_params['n'] = str(entry["hom_id"])
+        if (entry['lemma'] and 'pos' in entry and 'Vārda daļa' in entry['pos']):
+            entry_params['type'] = "affix"
+        elif (entry['lemma'] and 'pos' in entry and 'Saīsinājums' in entry['pos']):
+            entry_params['type'] = "abbr"
+        elif (entry['lemma'] and 'pos' in entry and 'Vārds svešvalodā' in entry['pos']):
+            entry_params['type'] = "foreign"
+        else:
+            entry_params['type'] = "main"
+        self._start_node('entry', entry_params)
+        #self._start_node('entry', {'id': entry_id})
         #FIXME homonīmi un tipi
         #if (entry['hom_id'] > 0):
         #    self.file.write(f'\t\t<entry id={quoteattr(entry_id)} type={quoteattr("hom")}>\n')
