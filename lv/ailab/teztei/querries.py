@@ -26,7 +26,7 @@ def fetch_entries(connection, omit_mwe=False, omit_wordparts=False, omit_pot_wor
             where_clause = where_clause + """ or et.name = 'mwe'"""
         where_clause = '(' + where_clause + ')' + " and"
     sql_entries = f"""
-SELECT e.id, type_id, name as type_name, heading, human_key, homonym_no, primary_lexeme_id, e.data->>'Etymology' as etym
+SELECT e.id, type_id, name as type_name, heading, human_key, homonym_no, primary_lexeme_id, e.data->>'Etymology' as etym, e.data as data
 FROM {db_connection_info['schema']}.entries e
 JOIN {db_connection_info['schema']}.entry_types et ON e.type_id = et.id
 WHERE {where_clause} NOT e.hidden
@@ -43,6 +43,9 @@ ORDER BY human_key
             result = {'id': row.human_key, 'hom_id': row.homonym_no, 'type': row.type_name, 'headword': row.heading}
             if row.etym:
                 result['etym'] = row.etym
+            gram_dict = extract_gram(row)
+            result.update(gram_dict)
+
             lexemes = fetch_lexemes(connection, row.id, row.primary_lexeme_id)
             if lexemes:
                 result['lexemes'] = lexemes

@@ -8,9 +8,9 @@ import psycopg2
 import sys
 
 # Major TODOs:
-# - entry grammars
 # - export MWE links
 # - homonym grouping
+# - examples and example grammar
 # - migrate to hard sense IDs
 
 connection = None
@@ -62,7 +62,11 @@ filename = f'{db_connection_info["dbname"]}_tei{filename_infix}.xml'
 with open(filename, 'w', encoding='utf8') as f:
     tei_printer = TEI_Writer(f, dbname, whitelist)
     tei_printer.print_head()
-    for entry in fetch_entries(connection, omit_mwe, omit_wordparts, omit_pot_wordparts):
-        tei_printer.print_entry(entry)
+    try:
+        for entry in fetch_entries(connection, omit_mwe, omit_wordparts, omit_pot_wordparts):
+            tei_printer.print_entry(entry)
+    except BaseException as err:
+        print("Entry was: " + tei_printer.debug_entry_id)
+        raise
     tei_printer.print_tail()
 print(f'Done! Output written to {filename}')

@@ -13,6 +13,7 @@ class TEI_Writer:
         self.whitelist = whitelist
         self.gen = XMLGenerator(file, 'UTF-8', True)
         self.xml_depth = 0
+        self.debug_entry_id = ''
 
     def _start_node(self, name, attrs):
         global indent_char
@@ -76,6 +77,7 @@ class TEI_Writer:
         #if self.whitelist is not None and not self.whitelist.check(entry['mainLexeme']['lemma'], entry['hom_id']):
         if self.whitelist is not None and not self.whitelist.check(entry['headword'], entry['hom_id']):
             return
+        self.debug_entry_id = entry['id']
         entry_id = f'{self.dict_id}/{entry["id"]}'
         entry_params = {'id': entry_id, 'sortKey': entry['headword']}
         main_lexeme = entry['lexemes'][0]
@@ -98,6 +100,7 @@ class TEI_Writer:
         #FIXME homonīmi
         #self.print_lexeme(entry['mainLexeme'], entry['headword'], True)
         is_first = True
+        self.print_gram(entry)
         for lexeme in entry['lexemes']:
             self.print_lexeme(lexeme, entry['headword'], entry['type'], is_first)
             is_first = False
@@ -197,6 +200,8 @@ class TEI_Writer:
                 self.print_struct_restr(restr)
             self._end_node('gramGrp')
         else:
+            #if 'Restriction' not in struct_restr:
+                #print ("SAAD" + self.debug_entry_id)
             gramGrpParams = {'type': struct_restr['Restriction']}
             if 'Frequency' in struct_restr:
                 gramGrpParams['subtype'] = struct_restr['Frequency']
