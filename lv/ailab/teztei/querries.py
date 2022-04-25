@@ -13,16 +13,21 @@ def query(sql, parameters, connection):
     return r
 
 
-def fetch_entries(connection, omit_pot_wordparts):
+def fetch_entries(connection, omit_mwe=False, omit_wordparts=False, omit_pot_wordparts=False):
     entry_cursor = connection.cursor(cursor_factory=NamedTupleCursor)
-    where_clause = """et.name = 'word'"""
-    if not omit_pot_wordparts:
-        where_clause = where_clause + """ or et.name = 'wordPart'"""
+    where_clause = ""
+    if omit_mwe or omit_wordparts:
+        where_clause = """et.name = 'word'"""
+        if not omit_wordparts:
+            where_clause = where_clause + """ or et.name = 'wordPart'"""
+        if not omit_mwe:
+            where_clause = where_clause + """ or et.name = 'mwe'"""
+        where_clause = '(' + where_clause + ')' + " and"
     sql_entries = f"""
 SELECT e.id, type_id, name as type_name, heading, human_key, homonym_no, primary_lexeme_id, e.data->>'Etymology' as etym
 FROM {db_connection_info['schema']}.entries e
 JOIN {db_connection_info['schema']}.entry_types et ON e.type_id = et.id
-WHERE ({where_clause}) and NOT e.hidden
+WHERE {where_clause} NOT e.hidden
 ORDER BY human_key
 """
     entry_cursor.execute(sql_entries)

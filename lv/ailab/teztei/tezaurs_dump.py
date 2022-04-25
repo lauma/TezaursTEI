@@ -8,17 +8,17 @@ import psycopg2
 import sys
 
 # Major TODOs:
-# - export synset relations
-# - export gradsets
-# - export MWE entries
-# - export all lexemes
+# - export MWE links
+# - homonym grouping
 # - migrate to hard sense IDs
 
 connection = None
 dbname = None
 whitelist = None
 
-omit_pot_wordparts = True
+omit_wordparts = False
+omit_pot_wordparts = False
+omit_mwe = False
 
 do_free_texts = False
 do_inflection_texts = False
@@ -61,7 +61,7 @@ filename = f'{db_connection_info["dbname"]}_tei{filename_infix}.xml'
 with open(filename, 'w', encoding='utf8') as f:
     tei_printer = TEI_Writer(f, dbname, whitelist)
     tei_printer.print_head()
-    for entry in fetch_entries(connection, omit_pot_wordparts):
+    for entry in fetch_entries(connection, omit_mwe, omit_wordparts, omit_pot_wordparts):
         tei_printer.print_entry(entry)
     tei_printer.print_tail()
 print(f'Done! Output written to {filename}')

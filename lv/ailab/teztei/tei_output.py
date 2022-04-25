@@ -112,7 +112,7 @@ class TEI_Writer:
         if is_main:
             self._start_node('form', {'type': 'lemma'})
         else:
-            self._start_node('form', {'type': lexeme['type']})
+            self._start_node('form', {'type': TEI_Writer.lexeme_type(lexeme['type'], entry_type)})
 
         # TODO vai šito vajag?
         if is_main and lexeme['lemma'] != headword:
@@ -138,17 +138,16 @@ class TEI_Writer:
 
                 if 'stem_inf' in lexeme['paradigm'] or 'stem_pres' in lexeme['paradigm'] or 'stem_past' in lexeme['paradigm']:
                     paradigm_text = paradigm_text + ':'
-
-                if 'stem_inf' in lexeme['paradigm']:
-                    paradigm_text = paradigm_text + lexeme['paradigm']['stem_inf'] + ';'
-                else:
-                    paradigm_text = paradigm_text + ';'
-                if 'stem_pres' in lexeme['paradigm']:
-                    paradigm_text = paradigm_text + lexeme['paradigm']['stem_pres'] + ';'
-                else:
-                    paradigm_text = paradigm_text + ';'
-                if 'stem_past' in lexeme['paradigm']:
-                    paradigm_text = paradigm_text + lexeme['paradigm']['stem_past']
+                    if 'stem_inf' in lexeme['paradigm']:
+                        paradigm_text = paradigm_text + lexeme['paradigm']['stem_inf'] + ';'
+                    else:
+                        paradigm_text = paradigm_text + ';'
+                    if 'stem_pres' in lexeme['paradigm']:
+                        paradigm_text = paradigm_text + lexeme['paradigm']['stem_pres'] + ';'
+                    else:
+                        paradigm_text = paradigm_text + ';'
+                    if 'stem_past' in lexeme['paradigm']:
+                        paradigm_text = paradigm_text + lexeme['paradigm']['stem_past']
 
                 self._do_leaf_node('iType', {'type': 'https://github.com/PeterisP/morphology'}, paradigm_text)
             elif 'infl_text' in lexeme:
