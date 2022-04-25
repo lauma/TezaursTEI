@@ -8,6 +8,7 @@ import psycopg2
 import sys
 
 # Major TODOs:
+# - entry grammars
 # - export MWE links
 # - homonym grouping
 # - migrate to hard sense IDs

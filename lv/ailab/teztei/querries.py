@@ -1,3 +1,5 @@
+from pprint import pprint
+
 from psycopg2.extras import NamedTupleCursor
 
 from lv.ailab.teztei.db_config import db_connection_info
@@ -81,61 +83,73 @@ ORDER BY (l.id!={main_lex_id}), order_no
     for lexeme in lexemes:
         lexeme_dict = {'lemma': lexeme.lemma}
 
-        # Legacy POS logic to be substituted with general flag processing
-        if lexeme.paradigm_data and 'Vārdšķira' in lexeme.paradigm_data:
-            lexeme_dict['pos'] = [lexeme.paradigm_data['Vārdšķira']]
-            if 'Reziduāļa tips' in lexeme.paradigm_data:
-                lexeme_dict['pos'].append(lexeme.paradigm_data['Reziduāļa tips'])
-        if lexeme.data and 'Gram' in lexeme.data:
-            gram = lexeme.data['Gram']
-            if 'Flags' in gram and 'Kategorija' in gram['Flags'] and gram['Flags']['Kategorija']:
-                lexeme_dict['pos'] = gram['Flags']['Kategorija']
-            if 'Flags' in gram and 'Citi' in gram['Flags'] and 'Neviennozīmīga vārdšķira vai kategorija' in \
-                    gram['Flags']['Citi']:
-                lexeme_dict['pos'] = []
-            if 'FlagText' in gram and db_connection_info['schema'] != 'tezaurs':
-                lexeme_dict['pos_text'] = gram['FlagText']
-            if 'FreeText' in gram and db_connection_info['schema'] != 'tezaurs':
-                lexeme_dict['pos_text'] = gram['FreeText']
-
-        # General flag/property processing
         lexeme_dict['type'] = lexeme.lexeme_type
         if lexeme.data and 'Pronunciations' in lexeme.data:
             lexeme_dict['pronun'] = lexeme.data['Pronunciations']
-        lexeme_dict['flags'] = {}
-        if lexeme.data and 'Gram' in lexeme.data and 'Flags' in lexeme.data['Gram']:
-            lexeme_dict['flags'] = lexeme.data['Gram']['Flags']
-        # including flag inheritance from paradigms
-        if lexeme.paradigm_data:
-            for key in lexeme.paradigm_data.keys():
-                if not lexeme.paradigm_data[key]:
-                    lexeme_dict['flags'][key] = lexeme.paradigm_data[key]
 
-        # Structural restrictions
-        if lexeme.data and 'Gram' in lexeme.data and 'StructuralRestrictions' in lexeme.data['Gram']:
-            lexeme_dict['struct_restr'] = lexeme.data['Gram']['StructuralRestrictions']
-
-        # Inflection text
-        if lexeme.data and 'Gram' in lexeme.data and 'Inflection' in lexeme.data['Gram']:
-            lexeme_dict['infl_text'] = lexeme.data['Gram']['Inflection']
-
-        # Free text
-        if lexeme.data and 'Gram' in lexeme.data and 'FreeText' in lexeme.data['Gram']:
-            lexeme_dict['free_text'] = lexeme.data['Gram']['FreeText']
-
-        # Paradigms
-        if lexeme.paradigm:
-            lexeme_dict['paradigm'] = {'id': lexeme.paradigm}
-            if lexeme.stem1:
-                lexeme_dict['paradigm']['stem_inf'] = lexeme.stem1
-            if lexeme.stem2:
-                lexeme_dict['paradigm']['stem_pres'] = lexeme.stem2
-            if lexeme.stem3:
-                lexeme_dict['paradigm']['stem_past'] = lexeme.stem3
-
+        gram_dict = extract_gram(lexeme)
+        lexeme_dict.update(gram_dict)
         result.append(lexeme_dict)
     return result
 
+
+def extract_gram(element):
+    result = {}
+    # Legacy POS logic to be substituted with general flag processing
+    # if element.paradigm_data and 'Vārdšķira' in element.paradigm_data:
+    #    result['pos'] = [element.paradigm_data['Vārdšķira']]
+    #    if 'Reziduāļa tips' in element.paradigm_data:
+    #        result['pos'].append(element.paradigm_data['Reziduāļa tips'])
+    # if element.data and 'Gram' in element.data:
+    #    gram = element.data['Gram']
+    #    if 'Flags' in gram and 'Kategorija' in gram['Flags'] and gram['Flags']['Kategorija']:
+    #        result['pos'] = gram['Flags']['Kategorija']
+    #    if 'Flags' in gram and 'Citi' in gram['Flags'] and 'Neviennozīmīga vārdšķira vai kategorija' in \
+    #            gram['Flags']['Citi']:
+    #        result['pos'] = []
+    #    if 'FlagText' in gram and db_connection_info['schema'] != 'tezaurs':
+    #        result['pos_text'] = gram['FlagText']
+    #    if 'FreeText' in gram and db_connection_info['schema'] != 'tezaurs':
+    #        result['pos_text'] = gram['FreeText']
+
+
+    # General flag/property processing
+    if element.data and 'Gram' in element.data and 'Flags' in element.data['Gram'] \
+            and element.data['Gram']['Flags']:
+        result['flags'] = {}
+        result['flags'] = element.data['Gram']['Flags']
+    # including flag inheritance from paradigms
+    if hasattr(element, 'paradigm_data') and element.paradigm_data:
+        for key in element.paradigm_data.keys():
+            if not element.paradigm_data[key]:
+                result['flags'][key] = element.paradigm_data[key]
+
+    # Structural restrictions
+    if element.data and 'Gram' in element.data and 'StructuralRestrictions' in element.data['Gram'] \
+            and element.data['Gram']['StructuralRestrictions']:
+        result['struct_restr'] = element.data['Gram']['StructuralRestrictions']
+
+    # Inflection text
+    if element.data and 'Gram' in element.data and 'Inflection' in element.data['Gram'] and \
+            element.data['Gram']['Inflection']:
+        result['infl_text'] = element.data['Gram']['Inflection']
+
+    # Free text
+    if element.data and 'Gram' in element.data and 'FreeText' in element.data['Gram'] and \
+            element.data['Gram']['FreeText']:
+        result['free_text'] = element.data['Gram']['FreeText']
+
+    # Paradigms
+    if hasattr(element, 'paradigm') and element.paradigm:
+        result['paradigm'] = {'id': element.paradigm}
+        if hasattr(element, 'stem1') and element.stem1:
+            result['paradigm']['stem_inf'] = element.stem1
+        if hasattr(element, 'stem2') and element.stem2:
+            result['paradigm']['stem_pres'] = element.stem2
+        if hasattr(element, 'stem3') and element.stem3:
+            result['paradigm']['stem_past'] = element.stem3
+
+    return result
 
 def fetch_main_lexeme(connection, lexeme_id, entry_human_key):
     if not lexeme_id:
@@ -166,7 +180,7 @@ def fetch_senses(connection, entry_id, parent_sense_id=None):
     if parent_sense_id:
         parent_sense_clause = f"""= {parent_sense_id}"""
     sql_senses = f"""
-SELECT id, gloss, order_no, parent_sense_id, synset_id
+SELECT id, gloss, order_no, parent_sense_id, synset_id, data
 FROM {db_connection_info['schema']}.senses
 WHERE entry_id = {entry_id} and parent_sense_id {parent_sense_clause} and NOT hidden
 ORDER BY order_no
@@ -180,6 +194,8 @@ ORDER BY order_no
         # sense_data = json.loads(sense.data)
         subsenses = fetch_senses(connection, entry_id, sense.id)
         sense_dict = {'ord': sense.order_no, 'gloss': sense.gloss}
+        gram_dict = extract_gram(sense)
+        sense_dict.update(gram_dict)
         if sense.synset_id:
             sense_dict['synset_id'] = sense.synset_id
             sense_dict['synset_senses'] = fetch_synset_info(connection, sense.synset_id)
@@ -213,7 +229,7 @@ ORDER BY e.type_id, entry_hk
     return result
 
 
-def fetch_synset_relations (connection, synset_id):
+def fetch_synset_relations(connection, synset_id):
     if not synset_id:
         return
     result = []

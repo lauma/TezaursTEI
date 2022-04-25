@@ -1,4 +1,5 @@
 import re
+from pprint import pprint
 from xml.sax.saxutils import XMLGenerator
 
 indent_char = "  "
@@ -122,50 +123,58 @@ class TEI_Writer:
             for pronun in lexeme['pronun']:
                 self._do_leaf_node('pron', {}, pronun)
 
-        if 'pos' in lexeme or 'flags' in lexeme or 'struct_restr' in lexeme or 'free_text' in lexeme or 'infl_text':
-            self._start_node('gramGrp', {})
-            #TODO vai šito vajag?
-            if 'pos' in lexeme or 'pos_text' in lexeme:
-                if 'pos' in lexeme:
-                    for g in set(lexeme['pos']):
-                        self._do_leaf_node('gram', {'type': 'pos'}, g)
-                elif 'pos_text' in lexeme:
-                    self._do_leaf_node('gram', {}, lexeme['pos_text'])
-
-            # TODO: kā labāk - celms kā karogs vai paradigmas daļa?
-            if 'paradigm' in lexeme:
-                paradigm_text = lexeme['paradigm']['id']
-
-                if 'stem_inf' in lexeme['paradigm'] or 'stem_pres' in lexeme['paradigm'] or 'stem_past' in lexeme['paradigm']:
-                    paradigm_text = paradigm_text + ':'
-                    if 'stem_inf' in lexeme['paradigm']:
-                        paradigm_text = paradigm_text + lexeme['paradigm']['stem_inf'] + ';'
-                    else:
-                        paradigm_text = paradigm_text + ';'
-                    if 'stem_pres' in lexeme['paradigm']:
-                        paradigm_text = paradigm_text + lexeme['paradigm']['stem_pres'] + ';'
-                    else:
-                        paradigm_text = paradigm_text + ';'
-                    if 'stem_past' in lexeme['paradigm']:
-                        paradigm_text = paradigm_text + lexeme['paradigm']['stem_past']
-
-                self._do_leaf_node('iType', {'type': 'https://github.com/PeterisP/morphology'}, paradigm_text)
-            elif 'infl_text' in lexeme:
-                self._do_leaf_node('iType', {}, lexeme['infl_text'])
-
-            if 'flags' in lexeme:
-                self.print_flags(lexeme['flags'])
-            if 'struct_restr' in lexeme:
-                self.print_struct_restr(lexeme['struct_restr'])
-            if not ('flags' in lexeme) and not ('struct_restr' in lexeme) and 'free_text' in lexeme:
-                self._do_leaf_node('gram', {}, lexeme['free_text'])
-
-            self._end_node('gramGrp')
-
+        self.print_gram(lexeme)
         self._end_node('form')
+
+    def print_gram(self, parent):
+        #if 'pos' not in parent and 'flags' not in parent and 'struct_restr' not in parent and \
+        if 'flags' not in parent and 'struct_restr' not in parent and \
+                'free_text' not in parent and 'infl_text' not in parent:
+            return
+
+        self._start_node('gramGrp', {})
+        #TODO vai šito vajag?
+        #if 'pos' in lexeme or 'pos_text' in lexeme:
+        #    if 'pos' in lexeme:
+        #        for g in set(lexeme['pos']):
+        #            self._do_leaf_node('gram', {'type': 'pos'}, g)
+        #    elif 'pos_text' in lexeme:
+        #        self._do_leaf_node('gram', {}, lexeme['pos_text'])
+
+        # TODO: kā labāk - celms kā karogs vai paradigmas daļa?
+        if 'paradigm' in parent:
+            paradigm_text = parent['paradigm']['id']
+
+            if 'stem_inf' in parent['paradigm'] or 'stem_pres' in parent['paradigm'] or 'stem_past' in parent['paradigm']:
+                paradigm_text = paradigm_text + ':'
+                if 'stem_inf' in parent['paradigm']:
+                    paradigm_text = paradigm_text + parent['paradigm']['stem_inf'] + ';'
+                else:
+                    paradigm_text = paradigm_text + ';'
+                if 'stem_pres' in parent['paradigm']:
+                    paradigm_text = paradigm_text + parent['paradigm']['stem_pres'] + ';'
+                else:
+                    paradigm_text = paradigm_text + ';'
+                if 'stem_past' in parent['paradigm']:
+                    paradigm_text = paradigm_text + parent['paradigm']['stem_past']
+
+            self._do_leaf_node('iType', {'type': 'https://github.com/PeterisP/morphology'}, paradigm_text)
+        elif 'infl_text' in parent:
+            self._do_leaf_node('iType', {}, parent['infl_text'])
+
+        if 'flags' in parent:
+            self.print_flags(parent['flags'])
+        if 'struct_restr' in parent:
+            self.print_struct_restr(parent['struct_restr'])
+        if not ('flags' in parent) and not ('struct_restr' in parent) and 'free_text' in parent:
+            self._do_leaf_node('gram', {}, parent['free_text'])
+
+        self._end_node('gramGrp')
 
     # TODO piesaistīt karoga anglisko nosaukumu
     def print_flags (self, flags):
+        if not flags:
+            return
         self._start_node('gramGrp', {'type': 'properties'})
         for key in sorted(flags.keys()):
             if isinstance(flags[key], list):
@@ -223,6 +232,7 @@ class TEI_Writer:
         sense_id = f'{id_stub}/{sense["ord"]}'
         sense_ord = f'{sense["ord"]}'
         self._start_node('sense', {'id': sense_id, 'n': sense_ord})
+        self.print_gram(sense)
         self._do_leaf_node('def', {}, sense['gloss'], True)
         if 'synset_id' in sense:# and 'synset_senses' in sense:
 
