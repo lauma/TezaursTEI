@@ -4,6 +4,7 @@ from lv.ailab.teztei.db_config import db_connection_info
 
 # TODO paprasīt P un sataisīt smukāk kveriju veidošanu.
 
+
 def query(sql, parameters, connection):
     cursor = connection.cursor(cursor_factory=NamedTupleCursor)
     cursor.execute(sql, parameters)
@@ -18,13 +19,12 @@ def fetch_entries(connection, omit_pot_wordparts):
     if not omit_pot_wordparts:
         where_clause = where_clause + """ or et.name = 'wordPart'"""
     sql_entries = f"""
-SELECT e.id, type_id, name as type_name, human_key, homonym_no, primary_lexeme_id, e.data->>'Etymology' as etym
+SELECT e.id, type_id, name as type_name, heading, human_key, homonym_no, primary_lexeme_id, e.data->>'Etymology' as etym
 FROM {db_connection_info['schema']}.entries e
 JOIN {db_connection_info['schema']}.entry_types et ON e.type_id = et.id
 WHERE ({where_clause}) and NOT e.hidden
 ORDER BY human_key
 """
-
     entry_cursor.execute(sql_entries)
     counter = 0
     while True:
@@ -33,35 +33,22 @@ ORDER BY human_key
             break
         for row in rows:
             counter = counter + 1
-            result = {'id': row.human_key, 'hom_id': row.homonym_no, 'type': row.type_name}
+            result = {'id': row.human_key, 'hom_id': row.homonym_no, 'type': row.type_name, 'headword': row.heading}
             if row.etym:
                 result['etym'] = row.etym
-            lexeme = fetch_lexeme(connection, row.primary_lexeme_id, row.human_key)
-            if not lexeme:
+            lexemes = fetch_lexemes(connection, row.id, row.primary_lexeme_id)
+            if lexemes:
+                result['lexemes'] = lexemes
+            # primary_lexeme = fetch_main_lexeme(connection, row.primary_lexeme_id, row.human_key)
+            primary_lexeme = lexemes[0]
+            if not primary_lexeme:
                 continue
-            if omit_pot_wordparts and (row.type_name == 'wordPart' or lexeme.lemma.startswith('-') or lexeme.lemma.endswith('-')):
+            if omit_pot_wordparts and \
+                    (row.type_name == 'wordPart' or primary_lexeme['lemma'].startswith('-') or
+                     primary_lexeme['lemma'].endswith('-')):
                 continue
-            result['lemma'] = lexeme.lemma
-            if lexeme.paradigm_data and 'Vārdšķira' in lexeme.paradigm_data:
-                result['pos'] = [lexeme.paradigm_data['Vārdšķira']]
-                if 'Reziduāļa tips' in lexeme.paradigm_data:
-                    #result['pos'] = result['pos'] + lexeme.paradigm_data['Reziduāļa tips']
-                    result['pos'].append(lexeme.paradigm_data['Reziduāļa tips'])
-                # FIXME izņemt pēc DB update
-                if 'Darbības vārda tips' in lexeme.paradigm_data:
-                    result['pos'].append('Darbības vārds')
-            if lexeme.data and 'Gram' in lexeme.data:
-                gram = lexeme.data['Gram']
-                if 'Flags' in gram and 'Kategorija' in gram['Flags'] and gram['Flags']['Kategorija']:
-                    result['pos'] = gram['Flags']['Kategorija']
-                if 'Flags' in gram and 'Citi' in gram['Flags'] and 'Neviennozīmīga vārdšķira vai kategorija' in gram['Flags']['Citi']:
-                    result['pos'] = []
-                if 'FlagText' in gram and db_connection_info['schema'] != 'tezaurs':
-                    result['pos_text'] = gram['FlagText']
-                if 'FreeText' in gram and db_connection_info['schema'] != 'tezaurs':
-                    result['pos_text'] = gram['FreeText']
-            if lexeme.data and 'Pronunciations' in lexeme.data:
-                result['pronun'] = lexeme.data['Pronunciations']
+            #prim_lex = {'lemma': primary_lexeme.lemma}
+            # result['mainLexeme'] = prim_lex
             senses = fetch_senses(connection, row.id)
             if senses:
                 result['senses'] = senses
@@ -69,7 +56,83 @@ ORDER BY human_key
         print(f'{counter}\r')
 
 
-def fetch_lexeme(connection, lexeme_id, entry_human_key):
+def fetch_lexemes(connection, entry_id, main_lex_id):
+    if not entry_id:
+        return
+    lexeme_cursor = connection.cursor(cursor_factory=NamedTupleCursor)
+    sql_senses = f"""
+SELECT l.id, lemma, lt.name as lexeme_type, p.human_key as paradigm, stem1, stem2, stem3, l.data, p.data as paradigm_data 
+FROM {db_connection_info['schema']}.lexemes l
+JOIN {db_connection_info['schema']}.lexeme_types lt ON l.type_id = lt.id
+LEFT OUTER JOIN {db_connection_info['schema']}.paradigms p ON l.paradigm_id = p.id
+WHERE entry_id = {entry_id} and NOT hidden
+ORDER BY (l.id!={main_lex_id}), order_no
+"""
+    lexeme_cursor.execute(sql_senses)
+    lexemes = lexeme_cursor.fetchall()
+    if not lexemes:
+        return
+    result = []
+    for lexeme in lexemes:
+        lexeme_dict = {'lemma': lexeme.lemma}
+
+        # Legacy POS logic to be substituted with general flag processing
+        if lexeme.paradigm_data and 'Vārdšķira' in lexeme.paradigm_data:
+            lexeme_dict['pos'] = [lexeme.paradigm_data['Vārdšķira']]
+            if 'Reziduāļa tips' in lexeme.paradigm_data:
+                lexeme_dict['pos'].append(lexeme.paradigm_data['Reziduāļa tips'])
+        if lexeme.data and 'Gram' in lexeme.data:
+            gram = lexeme.data['Gram']
+            if 'Flags' in gram and 'Kategorija' in gram['Flags'] and gram['Flags']['Kategorija']:
+                lexeme_dict['pos'] = gram['Flags']['Kategorija']
+            if 'Flags' in gram and 'Citi' in gram['Flags'] and 'Neviennozīmīga vārdšķira vai kategorija' in \
+                    gram['Flags']['Citi']:
+                lexeme_dict['pos'] = []
+            if 'FlagText' in gram and db_connection_info['schema'] != 'tezaurs':
+                lexeme_dict['pos_text'] = gram['FlagText']
+            if 'FreeText' in gram and db_connection_info['schema'] != 'tezaurs':
+                lexeme_dict['pos_text'] = gram['FreeText']
+
+        # General flag/property processing
+        lexeme_dict['type'] = lexeme.lexeme_type
+        if lexeme.data and 'Pronunciations' in lexeme.data:
+            lexeme_dict['pronun'] = lexeme.data['Pronunciations']
+        lexeme_dict['flags'] = {}
+        if lexeme.data and 'Gram' in lexeme.data and 'Flags' in lexeme.data['Gram']:
+            lexeme_dict['flags'] = lexeme.data['Gram']['Flags']
+        # including flag inheritance from paradigms
+        if lexeme.paradigm_data:
+            for key in lexeme.paradigm_data.keys():
+                if not lexeme.paradigm_data[key]:
+                    lexeme_dict['flags'][key] = lexeme.paradigm_data[key]
+
+        # Structural restrictions
+        if lexeme.data and 'Gram' in lexeme.data and 'StructuralRestrictions' in lexeme.data['Gram']:
+            lexeme_dict['struct_restr'] = lexeme.data['Gram']['StructuralRestrictions']
+
+        # Inflection text
+        if lexeme.data and 'Gram' in lexeme.data and 'Inflection' in lexeme.data['Gram']:
+            lexeme_dict['infl_text'] = lexeme.data['Gram']['Inflection']
+
+        # Free text
+        if lexeme.data and 'Gram' in lexeme.data and 'FreeText' in lexeme.data['Gram']:
+            lexeme_dict['free_text'] = lexeme.data['Gram']['FreeText']
+
+        # Paradigms
+        if lexeme.paradigm:
+            lexeme_dict['paradigm'] = {'id': lexeme.paradigm}
+            if lexeme.stem1:
+                lexeme_dict['paradigm']['stem_inf'] = lexeme.stem1
+            if lexeme.stem2:
+                lexeme_dict['paradigm']['stem_pres'] = lexeme.stem2
+            if lexeme.stem3:
+                lexeme_dict['paradigm']['stem_past'] = lexeme.stem3
+
+        result.append(lexeme_dict)
+    return result
+
+
+def fetch_main_lexeme(connection, lexeme_id, entry_human_key):
     if not lexeme_id:
         print(f'No primary lexeme id for entry {entry_human_key}!')
         return
@@ -123,7 +186,7 @@ ORDER BY order_no
     return result
 
 
-def fetch_synset_info (connection, synset_id):
+def fetch_synset_info(connection, synset_id):
     if not synset_id:
         return
     synset_cursor = connection.cursor(cursor_factory=NamedTupleCursor)
@@ -143,6 +206,7 @@ ORDER BY e.type_id, entry_hk
     for member in synset_members:
         result.append({'softid': f'{member.entry_hk}/{member.sense_no}', 'hardid': member.sense_id})
     return result
+
 
 def fetch_synset_relations (connection, synset_id):
     if not synset_id:
@@ -179,6 +243,7 @@ WHERE rel.synset_1_id = {synset_id}
     sorted_result = sorted(result, key=lambda item: (item['relation'], item['other_name'], item['other']))
     return sorted_result
 
+
 def fetch_gradset (connection, member_synset_id):
     if not member_synset_id:
         return
@@ -189,9 +254,9 @@ SELECT syn.id as synset_id, syn.gradset_id as gradset_id, grad.synset_id as grad
 FROM  dict.synsets syn
 JOIN dict.gradsets grad ON syn.gradset_id = grad.id
 WHERE gradset_id = (
-	SELECT gradset_id
-	FROM dict.synsets
-	WHERE ID = {member_synset_id}) AND gradset_id is not null
+    SELECT gradset_id
+    FROM dict.synsets
+    WHERE ID = {member_synset_id}) AND gradset_id is not null
 ORDER BY syn.id
 """
     gradset_cursor.execute(sql_gradset)

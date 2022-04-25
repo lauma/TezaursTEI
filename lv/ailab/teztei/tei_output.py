@@ -4,6 +4,7 @@ from xml.sax.saxutils import XMLGenerator
 indent_char = "  "
 newline_char = "\n"
 
+
 class TEI_Writer:
     def __init__(self, file, dict_id, whitelist=None):
         self.file = file
@@ -69,54 +70,155 @@ class TEI_Writer:
         self._end_node('TEI')
         self.gen.endDocument()
 
+    # TODO: sakārtot, lai drukā ar jauno leksēmu drukāšanas funkciju un visas leksēmas
     def print_entry(self, entry):
-        if self.whitelist is not None and not self.whitelist.check(entry["lemma"], entry["hom_id"]):
+        #if self.whitelist is not None and not self.whitelist.check(entry['mainLexeme']['lemma'], entry['hom_id']):
+        if self.whitelist is not None and not self.whitelist.check(entry['headword'], entry['hom_id']):
             return
         entry_id = f'{self.dict_id}/{entry["id"]}'
-        entry_params = {'id': entry_id}
-        if (entry['hom_id'] > 0):
+        entry_params = {'id': entry_id, 'sortKey': entry['headword']}
+        main_lexeme = entry['lexemes'][0]
+        if entry['hom_id'] > 0:
             entry_params['n'] = str(entry["hom_id"])
-        if (entry['lemma'] and 'pos' in entry and 'Vārda daļa' in entry['pos']):
-            entry_params['type'] = "affix"
-        elif (entry['lemma'] and 'pos' in entry and 'Saīsinājums' in entry['pos']):
+        if entry['type'] == 'mwe' or entry['type'] == 'MWE':
+            entry_params['type'] = "mwe"
+        elif main_lexeme['lemma'] and 'pos' in entry and 'Vārda daļa' in main_lexeme['pos'] or \
+                entry['type'] == 'wordPart':
+            entry_params['type'] = "affix" #FIXME
+        elif main_lexeme['lemma'] and 'pos' in entry and 'Saīsinājums' in main_lexeme['pos'] or \
+                'paradigm' in main_lexeme and main_lexeme['paradigm']['id'] == 'abbr':
             entry_params['type'] = "abbr"
-        elif (entry['lemma'] and 'pos' in entry and 'Vārds svešvalodā' in entry['pos']):
+        elif main_lexeme['lemma'] and 'pos' in entry and 'Vārds svešvalodā' in main_lexeme['pos'] or \
+                'paradigm' in main_lexeme and main_lexeme['paradigm']['id'] == 'foreign':
             entry_params['type'] = "foreign"
         else:
             entry_params['type'] = "main"
         self._start_node('entry', entry_params)
-        #self._start_node('entry', {'id': entry_id})
-        #FIXME homonīmi un tipi
-        #if (entry['hom_id'] > 0):
-        #    self.file.write(f'\t\t<entry id={quoteattr(entry_id)} type={quoteattr("hom")}>\n')
-        #elif (entry['lemma'] and 'pos' in entry and 'Vārda daļa' in entry['pos']):
-        #    self.file.write(f'\t\t<entry id={quoteattr(entry_id)} type={quoteattr("affix")}>\n')
-        #elif (entry['lemma'] and 'pos' in entry and 'Saīsinājums' in entry['pos']):
-        #    self.file.write(f'\t\t<entry id={quoteattr(entry_id)} type={quoteattr("abbr")}>\n')
-        #elif (entry['lemma'] and 'pos' in entry and 'Vārds svešvalodā' in entry['pos']):
-        #    self.file.write(f'\t\t<entry id={quoteattr(entry_id)} type={quoteattr("foreign")}>\n')
-        #else:
-        #    self.file.write(f'\t\t<entry id={quoteattr(entry_id)} type={quoteattr("main")}>\n')
-        self._start_node('form', {'type': 'lemma'})
-        self._do_leaf_node('orth', {}, entry['lemma'])
-        if 'pronun' in entry:
-            for pronun in entry['pronun']:
-                self._do_leaf_node('pron', {}, pronun)
-        self._end_node('form')
-        if 'pos' in entry or 'pos_text' in entry:
-            self._start_node('gramGrp', {})
-            if 'pos' in entry:
-                for g in set(entry['pos']):
-                    self._do_leaf_node('gram', {'type': 'pos'}, g)
-            elif 'pos_text' in entry:
-                self._do_leaf_node('gram', {}, entry['pos_text'])
-            self._end_node('gramGrp')
+        #FIXME homonīmi
+        #self.print_lexeme(entry['mainLexeme'], entry['headword'], True)
+        is_first = True
+        for lexeme in entry['lexemes']:
+            self.print_lexeme(lexeme, entry['headword'], entry['type'], is_first)
+            is_first = False
         if 'senses' in entry:
             for sense in entry['senses']:
                 self.print_sense(sense, f'{self.dict_id}/{entry["id"]}')
         if 'etym' in entry:
             self._do_leaf_node('etym', {}, entry['etym'], True)
         self._end_node('entry')
+
+    def print_lexeme(self, lexeme, headword, entry_type, is_main=False):
+        
+        if is_main:
+            self._start_node('form', {'type': 'lemma'})
+        else:
+            self._start_node('form', {'type': lexeme['type']})
+
+        # TODO vai šito vajag?
+        if is_main and lexeme['lemma'] != headword:
+            self._do_leaf_node('form', {'type': 'headword'}, headword)
+        self._do_leaf_node('orth', {'type': 'lemma'}, lexeme['lemma'])
+        if 'pronun' in lexeme:
+            for pronun in lexeme['pronun']:
+                self._do_leaf_node('pron', {}, pronun)
+
+        if 'pos' in lexeme or 'flags' in lexeme or 'struct_restr' in lexeme or 'free_text' in lexeme or 'infl_text':
+            self._start_node('gramGrp', {})
+            #TODO vai šito vajag?
+            if 'pos' in lexeme or 'pos_text' in lexeme:
+                if 'pos' in lexeme:
+                    for g in set(lexeme['pos']):
+                        self._do_leaf_node('gram', {'type': 'pos'}, g)
+                elif 'pos_text' in lexeme:
+                    self._do_leaf_node('gram', {}, lexeme['pos_text'])
+
+            # TODO: kā labāk - celms kā karogs vai paradigmas daļa?
+            if 'paradigm' in lexeme:
+                paradigm_text = lexeme['paradigm']['id']
+
+                if 'stem_inf' in lexeme['paradigm'] or 'stem_pres' in lexeme['paradigm'] or 'stem_past' in lexeme['paradigm']:
+                    paradigm_text = paradigm_text + ':'
+
+                if 'stem_inf' in lexeme['paradigm']:
+                    paradigm_text = paradigm_text + lexeme['paradigm']['stem_inf'] + ';'
+                else:
+                    paradigm_text = paradigm_text + ';'
+                if 'stem_pres' in lexeme['paradigm']:
+                    paradigm_text = paradigm_text + lexeme['paradigm']['stem_pres'] + ';'
+                else:
+                    paradigm_text = paradigm_text + ';'
+                if 'stem_past' in lexeme['paradigm']:
+                    paradigm_text = paradigm_text + lexeme['paradigm']['stem_past']
+
+                self._do_leaf_node('iType', {'type': 'https://github.com/PeterisP/morphology'}, paradigm_text)
+            elif 'infl_text' in lexeme:
+                self._do_leaf_node('iType', {}, lexeme['infl_text'])
+
+            if 'flags' in lexeme:
+                self.print_flags(lexeme['flags'])
+            if 'struct_restr' in lexeme:
+                self.print_struct_restr(lexeme['struct_restr'])
+            if not ('flags' in lexeme) and not ('struct_restr' in lexeme) and 'free_text' in lexeme:
+                self._do_leaf_node('gram', {}, lexeme['free_text'])
+
+            self._end_node('gramGrp')
+
+        self._end_node('form')
+
+    # TODO piesaistīt karoga anglisko nosaukumu
+    def print_flags (self, flags):
+        self._start_node('gramGrp', {'type': 'properties'})
+        for key in sorted(flags.keys()):
+            if isinstance(flags[key], list):
+                for value in flags[key]:
+                    self._do_leaf_node('gram', {'type': key}, value)
+            else:
+                self._do_leaf_node('gram', {'type': key}, flags[key])
+        self._end_node('gramGrp')
+
+    # TODO piesaistīt ierobežojuma anglisko nosaukumu un varbūt arī biežuma?
+    def print_struct_restr (self, struct_restr):
+        if 'OR' in struct_restr:
+            self._start_node('gramGrp', {'type': 'restrictionDisjunction'})
+            for restr in struct_restr['OR']:
+                self.print_struct_restr(restr)
+            self._end_node('gramGrp')
+        elif 'AND' in struct_restr:
+            self._start_node('gramGrp', {'type': 'restrictionConjunction'})
+            for restr in struct_restr['AND']:
+                self.print_struct_restr(restr)
+            self._end_node('gramGrp')
+        else:
+            gramGrpParams = {'type': struct_restr['Restriction']}
+            if 'Frequency' in struct_restr:
+                gramGrpParams['subtype'] = struct_restr['Frequency']
+            self._start_node('gramGrp', gramGrpParams) #TODO piesaistīt anglisko nosaukumu
+            if 'Value' in struct_restr and 'Flags' in struct_restr['Value']:
+                self.print_flags(struct_restr['Value']['Flags'])
+            if 'Value' in struct_restr and 'LanguageMaterial' in struct_restr['Value']:
+                for material in struct_restr['Value']['LanguageMaterial']:
+                    self._do_leaf_node('gram', {'type': 'languageMaterial'}, material)
+            self._end_node('gramGrp')
+
+    def lexeme_type (type_from_db, entry_type):
+        match type_from_db:
+            case 'default':
+                if (entry_type == 'word'):
+                    return 'simple'
+                elif (entry_type == 'mwe'):
+                    return 'phrase'
+                else:
+                    return 'affix'
+            case 'derivative':
+                return 'derivative'
+            case 'alternativeSpelling':
+                return 'variant'
+            case 'findVia':
+                return 'other'
+            case 'abbreviation':
+                return 'abbreviation'
+            case 'alternativeSpellingDerivative':
+                return 'variantDerivative'
 
     def print_sense(self, sense, id_stub):
         sense_id = f'{id_stub}/{sense["ord"]}'

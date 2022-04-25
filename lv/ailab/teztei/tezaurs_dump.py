@@ -18,7 +18,10 @@ connection = None
 dbname = None
 whitelist = None
 
-omit_pot_wordparts = False
+omit_pot_wordparts = True
+
+do_free_texts = False
+do_inflection_texts = False
 
 def db_connect():
     global connection
