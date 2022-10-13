@@ -2,7 +2,7 @@ from psycopg2.extras import NamedTupleCursor
 
 from lv.ailab.tezdb.db_config import db_connection_info
 from lv.ailab.tezdb.query_uttils import extract_gram
-from lv.ailab.tezdb.single_sinset_queries import fetch_synset_info, fetch_synset_relations, fetch_gradset
+from lv.ailab.tezdb.single_sinset_queries import fetch_synset_senses, fetch_synset_relations, fetch_gradset
 
 
 def fetch_lexemes(connection, entry_id, main_lex_id):
@@ -82,7 +82,7 @@ ORDER BY order_no
         sense_dict.update(gram_dict)
         if sense.synset_id:
             sense_dict['synset_id'] = sense.synset_id
-            sense_dict['synset_senses'] = fetch_synset_info(connection, sense.synset_id)
+            sense_dict['synset_senses'] = fetch_synset_senses(connection, sense.synset_id)
             sense_dict['synset_rels'] = fetch_synset_relations(connection, sense.synset_id)
             sense_dict['gradset'] = fetch_gradset(connection, sense.synset_id)
         if subsenses:

@@ -62,7 +62,7 @@ def fetch_synseted_lexemes(connection):
     cursor = connection.cursor(cursor_factory=NamedTupleCursor)
     sql_synset_lexemes = f"""
 SELECT l.id as id, l.entry_id as entry_id, l.lemma as lemma,
-    p.human_key as paradigm, e.human_key as entry_human_key
+    p.human_key as paradigm, e.human_key as entry_hk
 FROM {db_connection_info['schema']}.lexemes as l
 JOIN {db_connection_info['schema']}.lexeme_types lt on l.type_id = lt.id
 JOIN {db_connection_info['schema']}.paradigms p on l.paradigm_id = p.id
@@ -81,7 +81,7 @@ ORDER BY l.lemma ASC
             break
         for row in rows:
             counter = counter + 1
-            result = {'id': row.id, 'entry': row.entry_human_key, 'lemma': row.lemma, 'paradigm': row.paradigm}
+            result = {'id': row.id, 'entry': row.entry_hk, 'lemma': row.lemma, 'paradigm': row.paradigm}
             yield result
         print(f'lexemes: {counter}\r')
 
