@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from lv.ailab.teztei.db_config import db_connection_info
+from lv.ailab.tezdbconfig.db_config import db_connection_info
 from lv.ailab.teztei.querries import fetch_entries
 from lv.ailab.teztei.tei_output import TEI_Writer
 from lv.ailab.teztei.whitelist import EntryWhitelist
