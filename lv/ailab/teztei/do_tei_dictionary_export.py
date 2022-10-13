@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from lv.ailab.tezdb.connection import db_connect
 from lv.ailab.tezdb.db_config import db_connection_info
-from lv.ailab.teztei.querries import fetch_entries
+from lv.ailab.tezdb.overview_querries import fetch_entries
 from lv.ailab.teztei.tei_output import TEIWriter
 from lv.ailab.teztei.whitelist import EntryWhitelist
 

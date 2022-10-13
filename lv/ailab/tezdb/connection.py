@@ -1,3 +1,5 @@
+from psycopg2.extras import NamedTupleCursor
+
 from lv.ailab.tezdb.db_config import db_connection_info
 
 import psycopg2
@@ -18,3 +20,11 @@ def db_connect():
             options=f'-c search_path={db_connection_info["schema"]}',
         )
     return connection
+
+
+def query(sql, parameters, connection):
+    cursor = connection.cursor(cursor_factory=NamedTupleCursor)
+    cursor.execute(sql, parameters)
+    r = cursor.fetchall()
+    cursor.close()
+    return r
