@@ -21,7 +21,8 @@ SELECT e.id, type_id, name as type_name, heading, human_key, homonym_no,
     primary_lexeme_id, e.data->>'Etymology' as etym, e.data as data
 FROM {db_connection_info['schema']}.entries e
 JOIN {db_connection_info['schema']}.entry_types et ON e.type_id = et.id
-cORDER BY type_id, heading
+WHERE {where_clause} NOT e.hidden
+ORDER BY type_id, heading
 """
     cursor.execute(sql_entries)
     counter = 0
