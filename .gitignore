@@ -105,4 +105,4 @@ ENV/
 .mypy_cache/
 
 .DS_Store
-/lv/ailab/teztei/db_config.py
+/lv/ailab/tezdbconfig/db_config.py
