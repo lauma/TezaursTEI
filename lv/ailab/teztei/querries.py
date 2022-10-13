@@ -1,6 +1,6 @@
 from psycopg2.extras import NamedTupleCursor
 
-from lv.ailab.tezdbconfig.db_config import db_connection_info
+from lv.ailab.tezdb.db_config import db_connection_info
 
 # TODO paprasīt P un sataisīt smukāk kveriju veidošanu.
 

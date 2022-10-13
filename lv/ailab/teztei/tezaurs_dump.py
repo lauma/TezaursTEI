@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-from lv.ailab.tezdbconfig.db_config import db_connection_info
+from lv.ailab.tezdb.connection import db_connect
+from lv.ailab.tezdb.db_config import db_connection_info
 from lv.ailab.teztei.querries import fetch_entries
 from lv.ailab.teztei.tei_output import TEIWriter
 from lv.ailab.teztei.whitelist import EntryWhitelist
 
-import psycopg2
 import sys
 
 # Major TODOs:
@@ -24,31 +24,14 @@ omit_mwe = False
 do_free_texts = False
 do_inflection_texts = False
 
-def db_connect():
-    global connection
-    global dbname
-
-    if db_connection_info is None or db_connection_info["host"] is None or len(db_connection_info["host"]) == 0:
-        print("Postgres connection error: connection information must be supplied in db_config")
-        raise Exception("Postgres connection error: connection information must be supplied in <conn_info>")
-
-    if dbname:
-        db_connection_info['dbname'] = dbname
-    else:
-        dbname = db_connection_info['dbname']
-    print(f'Connecting to database {db_connection_info["dbname"]}, schema {db_connection_info["schema"]}')
-    connection = psycopg2.connect(
-            host=db_connection_info['host'],
-            port=db_connection_info['port'],
-            dbname=db_connection_info['dbname'],
-            user=db_connection_info['user'],
-            password=db_connection_info['password'],
-            options=f'-c search_path={db_connection_info["schema"]}',
-        )
-
 
 if len(sys.argv) > 1:
     dbname = sys.argv[1]
+if dbname:
+    db_connection_info['dbname'] = dbname
+else:
+    dbname = db_connection_info['dbname']
+
 if len(sys.argv) > 2:
     whitelist = EntryWhitelist()
     whitelist.load(sys.argv[2])
@@ -57,7 +40,8 @@ if len(sys.argv) > 2:
 filename_infix = ""
 if whitelist is not None:
     filename_infix = "_filtered"
-db_connect()
+
+connection = db_connect()
 filename = f'{db_connection_info["dbname"]}_tei{filename_infix}.xml'
 with open(filename, 'w', encoding='utf8') as f:
     tei_printer = TEIWriter(f, dbname, whitelist)
