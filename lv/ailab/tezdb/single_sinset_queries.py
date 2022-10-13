@@ -41,7 +41,8 @@ WHERE rel.synset_2_id = {synset_id}
     rel_members = cursor.fetchall()
     if rel_members:
         for member in rel_members:
-            result.append({'other': member.other, 'other_name': member.other_name, 'relation': member.rel_name})
+            result.append({'id': member.id, 'other': member.other, 'other_name': member.other_name,
+                           'relation': member.rel_name})
 
     sql_synset_rels_2 = f"""
 SELECT rel.id, rel.synset_2_id as other, tp.name as other_name, tp.relation_name as rel_name
@@ -102,5 +103,7 @@ ORDER BY e.type_id, entry_hk
 """
     cursor.execute(sql_synset_lexemes)
     lexemes = cursor.fetchall()
-
-    return lexemes
+    result = []
+    for lexeme in lexemes:
+        result.append({'lexeme_id': lexeme.lexeme_id, 'lemma': lexeme.lemma, 'entry': lexeme.entry_hk})
+    return result

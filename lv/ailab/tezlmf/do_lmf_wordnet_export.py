@@ -5,7 +5,7 @@ from lv.ailab.tezdb.db_config import db_connection_info
 import sys
 
 from lv.ailab.tezdb.overview_querries import fetch_synsets, fetch_synseted_lexemes
-from lv.ailab.tezdb.single_sinset_queries import fetch_synset_senses, fetch_synset_lexemes
+from lv.ailab.tezdb.single_sinset_queries import fetch_synset_senses, fetch_synset_lexemes, fetch_synset_relations
 from lv.ailab.tezlmf.lmf_output import LMFWriter
 
 # TODO: izrunas, LMF POS no tēzaura vārdšķiras
@@ -36,8 +36,9 @@ with open(filename, 'w', encoding='utf8') as f:
         for synset_id in fetch_synsets(connection):
             synset_senses = fetch_synset_senses(connection, synset_id)
             synset_lexemes = fetch_synset_lexemes(connection, synset_id)
-            if synset_senses and synset_lexemes:
-                lmf_printer.print_synset(synset_id, synset_senses, synset_lexemes)
+            relations = fetch_synset_relations(connection, synset_id)
+            if synset_senses and synset_lexemes and relations:
+                lmf_printer.print_synset(synset_id, synset_senses, synset_lexemes, relations)
     except BaseException as err:
         print("Synset was: " + lmf_printer.debug_id)
         raise

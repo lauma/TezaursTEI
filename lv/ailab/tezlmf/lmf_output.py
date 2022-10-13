@@ -54,14 +54,18 @@ class LMFWriter(XMLWriter):
         self.end_node('Lemma')
         self.end_node('LexicalEntry')
 
-    def print_synset(self, synset_id, synset_senses, synset_lexemes):
+    def print_synset(self, synset_id, synset_senses, synset_lexemes, relations):
         item_id = f'{self.wordnet_id}-{self.dict_id}-{synset_id}'
         self.debug_id = item_id
         memberstr = ''
         for lexeme in synset_lexemes:
-            memberstr = f'{memberstr} {self.wordnet_id}-{self.dict_id}-{lexeme.entry_hk}-{lexeme.lexeme_id}'
+            memberstr = f'{memberstr} {self.wordnet_id}-{self.dict_id}-{lexeme["entry"]}-{lexeme["lexeme_id"]}'
         self.start_node('Synset', {'id': item_id, 'ili': '0', 'members': memberstr.strip()})  # TODO
         for sense in synset_senses:
             if 'gloss' in sense:
                 self.do_simple_leaf_node('Definition', {}, sense['gloss'])
+        for rel in relations:
+            self.do_simple_leaf_node('SynsetRelation',
+                                     {'relType': rel['other_name'],
+                                      'target': f'{self.wordnet_id}-{self.dict_id}-{rel["other"]}'}, None)
         self.end_node('Synset')
