@@ -1,6 +1,6 @@
-# TezaursTEI
+# Tēzaurs.lv export tools
 
-Script to prepare an offline TEI export out of the Tezaurs.lv database - currently very minimalistic - only main lexeme and gloss texts.
+Scripts to prepare an offline TEI and LMF exports from the Tezaurs.lv database.
 
 Requires psycopg2, which doesn't install cleanly on OSX and requires that postgresql is installed via brew (not the downloaded .dmg installer) and the following
 

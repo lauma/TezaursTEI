@@ -33,8 +33,11 @@ class XMLWriter:
         self.gen.endElement(name)
         self.gen.ignorableWhitespace(self.newline_chars)
 
-    def start_document(self):
+    def start_document(self, doctype=None):
         self.gen.startDocument()
+        if doctype:
+            self.file.write(doctype)
+            self.file.write(self.newline_chars)
 
     def end_document(self):
         self.gen.endDocument()
