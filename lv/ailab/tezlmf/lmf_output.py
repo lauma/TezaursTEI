@@ -17,10 +17,10 @@ class LMFWriter(XMLWriter):
                                     'label': 'Latvian Wordnet',
                                     'language': 'lv',
                                     'email': 'peteris@ailab.lv',
-                                    'licence': 'https://creativecommons.org/licenses/by-nc/4.0/',
+                                    'license': 'https://creativecommons.org/licenses/by-nc/4.0/',
                                     'version': wordnet_vers,
                                     'url': 'https://wordnet.ailab.lv/',
-                                    'citations': 'TODO',
+                                    'citation': 'TODO',
                                     'logo': 'https://wordnet.ailab.lv/images/mazais-logo-ailab.svg'})
 
     def print_tail(self):
