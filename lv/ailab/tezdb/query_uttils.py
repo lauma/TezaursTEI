@@ -54,3 +54,22 @@ def extract_gram(element):
             result['paradigm']['stem_past'] = element.stem3
 
     return result
+
+
+def lmfiy_pos(pos, lemma):
+    if not pos:
+        return 'u'
+    elif pos == 'Lietvārds':
+        return 'n'
+    elif pos == 'Darbības vārds' or pos == 'Divdabis':
+        return 'v'
+    elif pos == 'Īpašības vārds':
+        return 'a'
+    elif pos == 'Apstākļa vārds':
+        return 'r'
+    elif pos == 'Prievārds':
+        return 'p'
+
+    else:
+        print(f'Unknown POS {pos} for lemma {lemma}.')
+        return 'x'

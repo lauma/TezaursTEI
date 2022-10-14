@@ -1,3 +1,4 @@
+from lv.ailab.tezdb.query_uttils import lmfiy_pos
 from lv.ailab.xmlutils.writer import XMLWriter
 
 
@@ -31,23 +32,7 @@ class LMFWriter(XMLWriter):
         item_id = f'{self.wordnet_id}-{self.dict_id}-{lexeme["entry"]}-{lexeme["id"]}'
         self.debug_id = item_id
         self.start_node('LexicalEntry', {'id':  item_id})
-
-        # TODO uztaisīt no vārdšķiras
-        if lexeme['paradigm'].startswith('noun'):
-            lmfpos = 'n'
-        elif lexeme['paradigm'].startswith('verb'):
-            lmfpos = 'v'
-        elif lexeme['paradigm'].startswith('adj') or lexeme['paradigm'].startswith('part-'):
-            lmfpos = 'a'
-        elif lexeme['paradigm'].startswith('adverb'):
-            lmfpos = 'r'
-        elif lexeme['paradigm'].startswith('prep'):
-            lmfpos = 'p'
-        elif 'paradigm' in lexeme:
-            lmfpos = 'x'
-        else:
-            lmfpos = 'u'
-
+        lmfpos = lmfiy_pos(lexeme['pos'], lexeme['lemma'])
         lemma_params = {'writtenForm': lexeme['lemma'], 'partOfSpeech': lmfpos}
         self.start_node('Lemma', lemma_params)
 

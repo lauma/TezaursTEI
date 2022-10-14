@@ -62,15 +62,17 @@ def fetch_synseted_lexemes(connection):
     cursor = connection.cursor(cursor_factory=NamedTupleCursor)
     sql_synset_lexemes = f"""
 SELECT l.id as id, l.entry_id as entry_id, l.lemma as lemma,
+    l.data->'Gram'->'Flags'->>'Vārdšķira' as lex_pos,
+    p.data->>'Vārdšķira' as p_pos,
     p.human_key as paradigm, e.human_key as entry_hk
 FROM {db_connection_info['schema']}.lexemes as l
 JOIN {db_connection_info['schema']}.lexeme_types lt on l.type_id = lt.id
 JOIN {db_connection_info['schema']}.paradigms p on l.paradigm_id = p.id
 JOIN {db_connection_info['schema']}.entries e on l.entry_id = e.id
-JOIN {db_connection_info['schema']}.senses s ON l.entry_id = s.entry_id
-WHERE s.synset_id <> 0 AND NOT l.hidden AND NOT s.hidden AND 
-    (lt.name = 'default' OR lt.name = 'alternativeSpelling' OR lt.name = 'abbreviation')
-GROUP BY l.id, p.human_key, e.human_key
+JOIN {db_connection_info['schema']}.senses s on l.entry_id = s.entry_id
+WHERE s.synset_id <> 0 and NOT l.hidden and NOT s.hidden and NOT e.hidden and
+    (lt.name = 'default' or lt.name = 'alternativeSpelling' or lt.name = 'abbreviation')
+GROUP BY l.id, paradigm, p_pos, entry_hk
 ORDER BY l.lemma ASC
 """
     cursor.execute(sql_synset_lexemes)
@@ -81,7 +83,10 @@ ORDER BY l.lemma ASC
             break
         for row in rows:
             counter = counter + 1
-            result = {'id': row.id, 'entry': row.entry_hk, 'lemma': row.lemma, 'paradigm': row.paradigm}
+            result = {'id': row.id, 'entry': row.entry_hk, 'lemma': row.lemma, 'paradigm': row.paradigm,
+                      'pos': row.p_pos}
+            if row.lex_pos:
+                result['pos'] = row.lex_pos
             yield result
         print(f'lexemes: {counter}\r')
 
