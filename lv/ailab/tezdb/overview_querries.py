@@ -69,7 +69,7 @@ SELECT l.id as id, l.entry_id as entry_id, l.lemma as lemma,
     p.human_key as paradigm, e.human_key as entry_hk
 FROM {db_connection_info['schema']}.lexemes as l
 JOIN {db_connection_info['schema']}.lexeme_types lt on l.type_id = lt.id
-JOIN {db_connection_info['schema']}.paradigms p on l.paradigm_id = p.id
+LEFT JOIN {db_connection_info['schema']}.paradigms p on l.paradigm_id = p.id
 JOIN {db_connection_info['schema']}.entries e on l.entry_id = e.id
 JOIN {db_connection_info['schema']}.senses s on l.entry_id = s.entry_id
 WHERE s.synset_id <> 0 and NOT l.hidden and NOT s.hidden and NOT e.hidden and
