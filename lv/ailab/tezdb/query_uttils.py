@@ -56,20 +56,28 @@ def extract_gram(element):
     return result
 
 
-def lmfiy_pos(pos, lemma):
+def lmfiy_pos(pos, abbr_type, lemma):
     if not pos:
         return 'u'
-    elif pos == 'Lietvārds':
+    elif pos == 'Lietvārds' \
+            or pos == 'Saīsinājums' and (abbr_type == 'Sugasvārds' or abbr_type == 'Īpašvārds'):
         return 'n'
-    elif pos == 'Darbības vārds' or pos == 'Divdabis':
+    elif pos == 'Darbības vārds' or pos == 'Divdabis' \
+            or pos == 'Saīsinājums' and abbr_type == 'Verbāls':
         return 'v'
-    elif pos == 'Īpašības vārds':
+    elif pos == 'Īpašības vārds' \
+            or pos == 'Saīsinājums' and abbr_type == 'Īpašības vārds':
         return 'a'
-    elif pos == 'Apstākļa vārds':
+    elif pos == 'Apstākļa vārds' \
+            or pos == 'Saīsinājums' and abbr_type == 'Apstāklis':
         return 'r'
     elif pos == 'Prievārds':
         return 'p'
-
+    elif pos == 'Partikula' or pos == 'Saiklis' or pos == 'Izsauksmes vārds' \
+            or pos == 'Vietniekvārds' or pos == 'Skaitļa vārds':
+        return 'x'
+    elif pos == 'Reziduālis':
+        return 'u'
     else:
         print(f'Unknown POS {pos} for lemma {lemma}.')
-        return 'x'
+        return 'u'

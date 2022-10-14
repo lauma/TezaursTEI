@@ -63,7 +63,9 @@ def fetch_synseted_lexemes(connection):
     sql_synset_lexemes = f"""
 SELECT l.id as id, l.entry_id as entry_id, l.lemma as lemma,
     l.data->'Gram'->'Flags'->>'Vārdšķira' as lex_pos,
+    l.data->'Gram'->'Flags'->>'Saīsinājuma tips' as lex_abbr_type,
     p.data->>'Vārdšķira' as p_pos,
+    p.data->>'Saīsinājuma tips' as p_abbr_type,
     p.human_key as paradigm, e.human_key as entry_hk
 FROM {db_connection_info['schema']}.lexemes as l
 JOIN {db_connection_info['schema']}.lexeme_types lt on l.type_id = lt.id
@@ -72,7 +74,7 @@ JOIN {db_connection_info['schema']}.entries e on l.entry_id = e.id
 JOIN {db_connection_info['schema']}.senses s on l.entry_id = s.entry_id
 WHERE s.synset_id <> 0 and NOT l.hidden and NOT s.hidden and NOT e.hidden and
     (lt.name = 'default' or lt.name = 'alternativeSpelling' or lt.name = 'abbreviation')
-GROUP BY l.id, paradigm, p_pos, entry_hk
+GROUP BY l.id, paradigm, p_pos, p_abbr_type, entry_hk
 ORDER BY l.lemma ASC
 """
     cursor.execute(sql_synset_lexemes)
@@ -84,9 +86,11 @@ ORDER BY l.lemma ASC
         for row in rows:
             counter = counter + 1
             result = {'id': row.id, 'entry': row.entry_hk, 'lemma': row.lemma, 'paradigm': row.paradigm,
-                      'pos': row.p_pos}
+                      'pos': row.p_pos, 'abbr_type': row.p_abbr_type}
             if row.lex_pos:
                 result['pos'] = row.lex_pos
+            if row.lex_abbr_type:
+                result['abbr_type'] = row.lex_abbr_type
             yield result
         print(f'lexemes: {counter}\r')
 

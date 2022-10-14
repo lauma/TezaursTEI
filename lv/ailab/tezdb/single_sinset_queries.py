@@ -21,7 +21,8 @@ ORDER BY e.type_id, entry_hk
         return
     result = []
     for member in synset_members:
-        result.append({'softid': f'{member.entry_hk}/{member.sense_no}', 'hardid': member.sense_id})
+        result.append({'softid': f'{member.entry_hk}/{member.sense_no}',
+                       'hardid': member.sense_id, 'gloss': member.gloss})
     return result
 
 
@@ -89,7 +90,7 @@ ORDER BY syn.id
     return result
 
 
-def fetch_synset_lexemes(connection, syndet_id):
+def fetch_synset_lexemes(connection, synset_id):
     cursor = connection.cursor(cursor_factory=NamedTupleCursor)
     sql_synset_lexemes = f"""
 SELECT syn.id,
@@ -98,7 +99,7 @@ FROM {db_connection_info['schema']}.synsets syn
 RIGHT OUTER JOIN {db_connection_info['schema']}.senses s ON syn.id = s.synset_id
 RIGHT OUTER JOIN {db_connection_info['schema']}.lexemes l ON s.entry_id = l.entry_id
 JOIN {db_connection_info['schema']}.entries e ON s.entry_id = e.id
-WHERE syn.id = {syndet_id} and NOT s.hidden and NOT l.hidden and NOT e.hidden
+WHERE syn.id = {synset_id} and NOT s.hidden and NOT l.hidden and NOT e.hidden
 ORDER BY e.type_id, entry_hk
 """
     cursor.execute(sql_synset_lexemes)
@@ -106,4 +107,22 @@ ORDER BY e.type_id, entry_hk
     result = []
     for lexeme in lexemes:
         result.append({'lexeme_id': lexeme.lexeme_id, 'lemma': lexeme.lemma, 'entry': lexeme.entry_hk})
+    return result
+
+
+def fetch_omw_eq_relations(connection, synset_id):
+    cursor = connection.cursor(cursor_factory=NamedTupleCursor)
+    sql_synset_lexemes = f"""
+SELECT syn.id as synset_id, el.url as url, el.remote_id as remote_id
+FROM {db_connection_info['schema']}.synsets syn
+JOIN {db_connection_info['schema']}.synset_external_links el ON syn.id = el.synset_id
+JOIN {db_connection_info['schema']}.external_link_types lt ON el.link_type_id = lt.id
+WHERE syn.id = {synset_id} and lt.name = 'omw' and el.data is null
+ORDER BY el.remote_id
+"""
+    cursor.execute(sql_synset_lexemes)
+    rels = cursor.fetchall()
+    result = []
+    for rel in rels:
+        result.append(rel.remote_id)
     return result
