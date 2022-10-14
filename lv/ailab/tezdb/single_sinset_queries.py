@@ -98,8 +98,10 @@ SELECT syn.id,
 FROM {db_connection_info['schema']}.synsets syn
 RIGHT OUTER JOIN {db_connection_info['schema']}.senses s ON syn.id = s.synset_id
 RIGHT OUTER JOIN {db_connection_info['schema']}.lexemes l ON s.entry_id = l.entry_id
+JOIN {db_connection_info['schema']}.lexeme_types lt on l.type_id = lt.id
 JOIN {db_connection_info['schema']}.entries e ON s.entry_id = e.id
-WHERE syn.id = {synset_id} and NOT s.hidden and NOT l.hidden and NOT e.hidden
+WHERE syn.id = {synset_id} and NOT s.hidden and NOT l.hidden and NOT e.hidden and
+    (lt.name = 'default' or lt.name = 'alternativeSpelling' or lt.name = 'abbreviation')
 ORDER BY e.type_id, entry_hk
 """
     cursor.execute(sql_synset_lexemes)
