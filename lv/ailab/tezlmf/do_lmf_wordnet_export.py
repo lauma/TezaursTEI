@@ -39,7 +39,8 @@ with open(filename, 'w', encoding='utf8') as f:
             synset_lexemes = fetch_synset_lexemes(connection, synset_id)
             relations = fetch_synset_relations(connection, synset_id)
             omw_relations = fetch_omw_eq_relations(connection, synset_id)
-            if synset_senses and synset_lexemes and relations:
+            # Drukās netukšos sinsetus, šobrīd tas nozīmē, ka vajag definīciju un leksēmu.
+            if synset_senses and synset_lexemes:
                 lmf_printer.print_synset(synset_id, synset_senses, synset_lexemes, relations, omw_relations)
     except BaseException as err:
         print("Synset was: " + lmf_printer.debug_id)

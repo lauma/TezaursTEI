@@ -53,9 +53,12 @@ class LMFWriter(XMLWriter):
                 ili = omw_relations[0]
 
         self.start_node('Synset', {'id': item_id, 'ili': ili, 'members': memberstr.strip()})
+        unique_gloss = {}
         for sense in synset_senses:
             if 'gloss' in sense:
-                self.do_simple_leaf_node('Definition', {}, sense['gloss'])
+                unique_gloss[sense['gloss']] = 1
+        for gloss in unique_gloss:
+            self.do_simple_leaf_node('Definition', {}, gloss)
         for rel in relations:
             self.do_simple_leaf_node('SynsetRelation',
                                      {'relType': rel['other_name'],
