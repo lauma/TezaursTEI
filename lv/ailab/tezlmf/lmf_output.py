@@ -1,4 +1,4 @@
-from lv.ailab.tezdb.query_uttils import lmfiy_pos
+from lv.ailab.tezdb.query_uttils import lmfiy_pos, extract_paradigm_text
 from lv.ailab.xmlutils.writer import XMLWriter
 
 
@@ -28,7 +28,7 @@ class LMFWriter(XMLWriter):
         self.end_node('LexicalResource')
         self.end_document()
 
-    def print_lexeme(self, lexeme, synseted_senses):
+    def print_lexeme(self, lexeme, synseted_senses, print_tags):
         gen_id = f'{self.wordnet_id}-{self.dict_id}'
         item_id = f'{gen_id}-{lexeme["entry"]}-{lexeme["id"]}'
         self.debug_id = item_id
@@ -36,6 +36,10 @@ class LMFWriter(XMLWriter):
         lmfpos = lmfiy_pos(lexeme['pos'], lexeme['abbr_type'], lexeme['lemma'])
         lemma_params = {'writtenForm': lexeme['lemma'], 'partOfSpeech': lmfpos}
         self.do_simple_leaf_node('Lemma', lemma_params)
+        if print_tags and 'paradigm' in lexeme:
+            paradigm_text = extract_paradigm_text(lexeme['paradigm'])
+            if paradigm_text:
+                self.do_simple_leaf_node('Tag', {}, paradigm_text)
         for syn_sense in synseted_senses:
             self.do_simple_leaf_node('Sense', {'id': f'{gen_id}-{lexeme["entry"]}-{syn_sense["sense_id"]}',
                                                'synset': f'{gen_id}-{syn_sense["synset_id"]}'})

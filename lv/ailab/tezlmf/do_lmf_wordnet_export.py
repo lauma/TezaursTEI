@@ -16,6 +16,7 @@ wordnet_id = 'wordnet_lv'
 wordnet_vers = '1.0'
 connection = None
 dbname = None
+print_tags = True
 
 if len(sys.argv) > 1:
     dbname = sys.argv[1]
@@ -33,7 +34,7 @@ with open(filename, 'w', encoding='utf8') as f:
     try:
         for lexeme in fetch_synseted_lexemes(connection):
             synset_senses = fetch_synseted_senses_by_lexeme(connection, lexeme['id'])
-            lmf_printer.print_lexeme(lexeme, synset_senses)
+            lmf_printer.print_lexeme(lexeme, synset_senses, print_tags)
     except BaseException as err:
         print("Lexeme was: " + lmf_printer.debug_id)
         raise

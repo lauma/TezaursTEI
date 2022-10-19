@@ -1,5 +1,5 @@
 from lv.ailab.tezdb.db_config import db_connection_info
-from lv.ailab.tezdb.query_uttils import extract_gram
+from lv.ailab.tezdb.query_uttils import extract_gram, extract_paradigm_stems
 from lv.ailab.tezdb.single_entry_queries import fetch_lexemes, fetch_senses
 
 from psycopg2.extras import NamedTupleCursor
@@ -66,7 +66,7 @@ SELECT l.id as id, l.entry_id as entry_id, l.lemma as lemma,
     l.data->'Gram'->'Flags'->>'Saīsinājuma tips' as lex_abbr_type,
     p.data->>'Vārdšķira' as p_pos,
     p.data->>'Saīsinājuma tips' as p_abbr_type,
-    p.human_key as paradigm, e.human_key as entry_hk
+    p.human_key as paradigm, stem1, stem2, stem3, e.human_key as entry_hk
 FROM {db_connection_info['schema']}.lexemes as l
 JOIN {db_connection_info['schema']}.lexeme_types lt on l.type_id = lt.id
 LEFT JOIN {db_connection_info['schema']}.paradigms p on l.paradigm_id = p.id
@@ -85,8 +85,11 @@ ORDER BY l.lemma ASC
             break
         for row in rows:
             counter = counter + 1
-            result = {'id': row.id, 'entry': row.entry_hk, 'lemma': row.lemma, 'paradigm': row.paradigm,
-                      'pos': row.p_pos, 'abbr_type': row.p_abbr_type}
+            result = {'id': row.id, 'entry': row.entry_hk, 'lemma': row.lemma, 'pos': row.p_pos,
+                      'abbr_type': row.p_abbr_type}
+            if hasattr(row, 'paradigm') and row.paradigm:
+                result['paradigm'] = extract_paradigm_stems(row)
+
             if row.lex_pos:
                 result['pos'] = row.lex_pos
             if row.lex_abbr_type:

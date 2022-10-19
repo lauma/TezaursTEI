@@ -45,16 +45,22 @@ def extract_gram(element):
 
     # Paradigms
     if hasattr(element, 'paradigm') and element.paradigm:
-        result['paradigm'] = {'id': element.paradigm}
-        if hasattr(element, 'stem1') and element.stem1:
-            result['paradigm']['stem_inf'] = element.stem1
-        if hasattr(element, 'stem2') and element.stem2:
-            result['paradigm']['stem_pres'] = element.stem2
-        if hasattr(element, 'stem3') and element.stem3:
-            result['paradigm']['stem_past'] = element.stem3
+        result['paradigm'] = extract_paradigm_stems(element)
 
     return result
 
+
+def extract_paradigm_stems(element):
+    result = {}
+    if hasattr(element, 'paradigm') and element.paradigm:
+        result = {'id': element.paradigm}
+        if hasattr(element, 'stem1') and element.stem1:
+            result['stem_inf'] = element.stem1
+        if hasattr(element, 'stem2') and element.stem2:
+            result['stem_pres'] = element.stem2
+        if hasattr(element, 'stem3') and element.stem3:
+            result['stem_past'] = element.stem3
+    return result
 
 def lmfiy_pos(pos, abbr_type, lemma):
     if not pos:
@@ -81,3 +87,22 @@ def lmfiy_pos(pos, abbr_type, lemma):
     else:
         print(f'Unknown POS {pos} for lemma {lemma}.')
         return 'u'
+
+
+def extract_paradigm_text(paradigm_data):
+    paradigm_text = paradigm_data['id']
+
+    if 'stem_inf' in paradigm_data or 'stem_pres' in paradigm_data \
+            or 'stem_past' in paradigm_data:
+        paradigm_text = paradigm_text + ':'
+        if 'stem_inf' in paradigm_data:
+            paradigm_text = paradigm_text + paradigm_data['stem_inf'] + ';'
+        else:
+            paradigm_text = paradigm_text + ';'
+        if 'stem_pres' in paradigm_data:
+            paradigm_text = paradigm_text + paradigm_data['stem_pres'] + ';'
+        else:
+            paradigm_text = paradigm_text + ';'
+        if 'stem_past' in paradigm_data:
+            paradigm_text = paradigm_text + paradigm_data['stem_past']
+    return paradigm_text

@@ -1,4 +1,6 @@
 import re
+
+from lv.ailab.tezdb.query_uttils import extract_paradigm_text
 from lv.ailab.xmlutils.writer import XMLWriter
 
 
@@ -120,21 +122,21 @@ class TEIWriter(XMLWriter):
 
         # TODO: kā labāk - celms kā karogs vai paradigmas daļa?
         if 'paradigm' in parent:
-            paradigm_text = parent['paradigm']['id']
-
-            if 'stem_inf' in parent['paradigm'] or 'stem_pres' in parent['paradigm'] \
-                    or 'stem_past' in parent['paradigm']:
-                paradigm_text = paradigm_text + ':'
-                if 'stem_inf' in parent['paradigm']:
-                    paradigm_text = paradigm_text + parent['paradigm']['stem_inf'] + ';'
-                else:
-                    paradigm_text = paradigm_text + ';'
-                if 'stem_pres' in parent['paradigm']:
-                    paradigm_text = paradigm_text + parent['paradigm']['stem_pres'] + ';'
-                else:
-                    paradigm_text = paradigm_text + ';'
-                if 'stem_past' in parent['paradigm']:
-                    paradigm_text = paradigm_text + parent['paradigm']['stem_past']
+            paradigm_text = extract_paradigm_text(parent['paradigm'])
+            # paradigm_text = parent['paradigm']['id']
+            # if 'stem_inf' in parent['paradigm'] or 'stem_pres' in parent['paradigm'] \
+            #        or 'stem_past' in parent['paradigm']:
+            #    paradigm_text = paradigm_text + ':'
+            #    if 'stem_inf' in parent['paradigm']:
+            #        paradigm_text = paradigm_text + parent['paradigm']['stem_inf'] + ';'
+            #    else:
+            #        paradigm_text = paradigm_text + ';'
+            #    if 'stem_pres' in parent['paradigm']:
+            #        paradigm_text = paradigm_text + parent['paradigm']['stem_pres'] + ';'
+            #    else:
+            #        paradigm_text = paradigm_text + ';'
+            #    if 'stem_past' in parent['paradigm']:
+            #        paradigm_text = paradigm_text + parent['paradigm']['stem_past']
 
             self._do_leaf_node('iType', {'type': 'https://github.com/PeterisP/morphology'}, paradigm_text)
         elif 'infl_text' in parent:
