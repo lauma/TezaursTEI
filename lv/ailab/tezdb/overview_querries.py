@@ -98,9 +98,11 @@ ORDER BY l.lemma ASC
 def fetch_synsets(connection):
     cursor = connection.cursor(cursor_factory=NamedTupleCursor)
     sql_synset = f"""
-SELECT id
-FROM {db_connection_info['schema']}.synsets
-ORDER BY id ASC 
+SELECT syn.id
+FROM {db_connection_info['schema']}.synsets as syn
+JOIN {db_connection_info['schema']}.senses as s ON syn.id = s.synset_id
+GROUP BY syn.id
+ORDER BY id ASC
 """
     cursor.execute(sql_synset)
     counter = 0

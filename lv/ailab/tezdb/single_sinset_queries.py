@@ -36,7 +36,9 @@ def fetch_synset_relations(connection, synset_id):
 SELECT rel.id, rel.synset_1_id as other, tp.name_inverse as other_name, tp.relation_name as rel_name
 FROM {db_connection_info['schema']}.synset_relations rel
 JOIN {db_connection_info['schema']}.synset_rel_types tp ON rel.type_id = tp.id
-WHERE rel.synset_2_id = {synset_id}
+JOIN dict.senses s ON rel.synset_1_id = s.synset_id
+WHERE rel.synset_2_id = {synset_id} and NOT s.hidden
+GROUP BY rel.id, other_name, rel_name
 """
     cursor.execute(sql_synset_rels_1)
     rel_members = cursor.fetchall()
@@ -49,7 +51,9 @@ WHERE rel.synset_2_id = {synset_id}
 SELECT rel.id, rel.synset_2_id as other, tp.name as other_name, tp.relation_name as rel_name
 FROM {db_connection_info['schema']}.synset_relations rel
 JOIN {db_connection_info['schema']}.synset_rel_types tp ON rel.type_id = tp.id
-WHERE rel.synset_1_id = {synset_id}
+JOIN dict.senses s ON rel.synset_2_id = s.synset_id
+WHERE rel.synset_1_id = {synset_id} and NOT s.hidden
+GROUP BY rel.id, other_name, rel_name
 """
 
     cursor.execute(sql_synset_rels_2)

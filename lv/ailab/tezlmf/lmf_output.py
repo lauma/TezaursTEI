@@ -45,7 +45,7 @@ class LMFWriter(XMLWriter):
         memberstr = ''
         for lexeme in synset_lexemes:
             memberstr = f'{memberstr} {self.wordnet_id}-{self.dict_id}-{lexeme["entry"]}-{lexeme["lexeme_id"]}'
-        ili = '0'
+        ili = ''
         if omw_relations:
             if len(omw_relations) > 1:
                 print(f'Synset {synset_id} has more than 1 OMW relation.')
