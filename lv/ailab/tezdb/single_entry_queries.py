@@ -8,7 +8,7 @@ from lv.ailab.tezdb.single_sinset_queries import fetch_synset_senses, fetch_syns
 def fetch_lexemes(connection, entry_id, main_lex_id):
     if not entry_id:
         return
-    lexeme_cursor = connection.cursor(cursor_factory=NamedTupleCursor)
+    cursor = connection.cursor(cursor_factory=NamedTupleCursor)
     sql_senses = f"""
 SELECT l.id, lemma, lt.name as lexeme_type, p.human_key as paradigm, stem1, stem2, stem3,
     l.data, p.data as paradigm_data 
@@ -18,8 +18,8 @@ LEFT OUTER JOIN {db_connection_info['schema']}.paradigms p ON l.paradigm_id = p.
 WHERE entry_id = {entry_id} and NOT hidden
 ORDER BY (l.id!={main_lex_id}), order_no
 """
-    lexeme_cursor.execute(sql_senses)
-    lexemes = lexeme_cursor.fetchall()
+    cursor.execute(sql_senses)
+    lexemes = cursor.fetchall()
     if not lexemes:
         return
     result = []
@@ -39,15 +39,15 @@ def fetch_main_lexeme(connection, lexeme_id, entry_human_key):
     if not lexeme_id:
         print(f'No primary lexeme id for entry {entry_human_key}!')
         return
-    lex_cursor = connection.cursor(cursor_factory=NamedTupleCursor)
+    cursor = connection.cursor(cursor_factory=NamedTupleCursor)
     sql_primary_lex = f"""
 SELECT l.id, lemma, paradigm_id, l.data, p.data as paradigm_data
 FROM {db_connection_info['schema']}.lexemes l
 LEFT OUTER JOIN {db_connection_info['schema']}.paradigms p ON l.paradigm_id = p.id
 WHERE l.id = {lexeme_id} and NOT l.hidden
 """
-    lex_cursor.execute(sql_primary_lex)
-    lexemes = lex_cursor.fetchall()
+    cursor.execute(sql_primary_lex)
+    lexemes = cursor.fetchall()
     if not lexemes or len(lexemes) < 1:
         print(f'No primary lexeme for entry {entry_human_key}!')
         return
@@ -59,7 +59,7 @@ WHERE l.id = {lexeme_id} and NOT l.hidden
 def fetch_senses(connection, entry_id, parent_sense_id=None):
     if not entry_id:
         return
-    sense_cursor = connection.cursor(cursor_factory=NamedTupleCursor)
+    cursor = connection.cursor(cursor_factory=NamedTupleCursor)
     parent_sense_clause = 'is NULL'
     if parent_sense_id:
         parent_sense_clause = f"""= {parent_sense_id}"""
@@ -69,8 +69,8 @@ FROM {db_connection_info['schema']}.senses
 WHERE entry_id = {entry_id} and parent_sense_id {parent_sense_clause} and NOT hidden
 ORDER BY order_no
 """
-    sense_cursor.execute(sql_senses)
-    senses = sense_cursor.fetchall()
+    cursor.execute(sql_senses)
+    senses = cursor.fetchall()
     if not senses:
         return
     result = []
@@ -88,4 +88,24 @@ ORDER BY order_no
         if subsenses:
             sense_dict['subsenses'] = subsenses
         result.append(sense_dict)
+    return result
+
+
+def fetch_synseted_senses_by_lexeme(connection, lexeme_id):
+    if not lexeme_id:
+        return
+    cursor = connection.cursor(cursor_factory=NamedTupleCursor)
+    sql_senses = f"""
+SELECT s.id as sense_id, s.synset_id
+FROM {db_connection_info['schema']}.senses s
+JOIN {db_connection_info['schema']}.lexemes l on s.entry_id = l.entry_id
+WHERE l.id = {lexeme_id} AND s.synset_id<>0 AND NOT s.hidden
+"""
+    cursor.execute(sql_senses)
+    senses = cursor.fetchall()
+    if not senses:
+        return
+    result = []
+    for s in senses:
+        result.append({'sense_id': s.sense_id, 'synset_id': s.synset_id})
     return result

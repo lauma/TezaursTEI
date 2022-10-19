@@ -26,10 +26,11 @@ class XMLWriter:
         self.gen.endElement(name)
         self.gen.ignorableWhitespace(self.newline_chars)
 
-    def do_simple_leaf_node(self, name, attrs, content):
+    def do_simple_leaf_node(self, name, attrs, content=None):
         self.gen.ignorableWhitespace(self.indent_chars * self.xml_depth)
         self.gen.startElement(name, attrs)
-        self.gen.characters(content)
+        if content:
+            self.gen.characters(content)
         self.gen.endElement(name)
         self.gen.ignorableWhitespace(self.newline_chars)
 

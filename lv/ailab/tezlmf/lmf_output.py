@@ -28,15 +28,18 @@ class LMFWriter(XMLWriter):
         self.end_node('LexicalResource')
         self.end_document()
 
-    def print_lexeme(self, lexeme):
-        item_id = f'{self.wordnet_id}-{self.dict_id}-{lexeme["entry"]}-{lexeme["id"]}'
+    def print_lexeme(self, lexeme, synseted_senses):
+        gen_id = f'{self.wordnet_id}-{self.dict_id}'
+        item_id = f'{gen_id}-{lexeme["entry"]}-{lexeme["id"]}'
         self.debug_id = item_id
         self.start_node('LexicalEntry', {'id':  item_id})
         lmfpos = lmfiy_pos(lexeme['pos'], lexeme['abbr_type'], lexeme['lemma'])
         lemma_params = {'writtenForm': lexeme['lemma'], 'partOfSpeech': lmfpos}
-        self.start_node('Lemma', lemma_params)
-
-        self.end_node('Lemma')
+        self.do_simple_leaf_node('Lemma', lemma_params)
+        for syn_sense in synseted_senses:
+            self.do_simple_leaf_node('Sense',
+                    {'id': f'{gen_id}-{lexeme["entry"]}-{syn_sense["sense_id"]}',
+                     'synset': f'{gen_id}-{syn_sense["synset_id"]}'})
         self.end_node('LexicalEntry')
 
     def print_synset(self, synset_id, synset_senses, synset_lexemes, relations, omw_relations):
@@ -62,5 +65,5 @@ class LMFWriter(XMLWriter):
         for rel in relations:
             self.do_simple_leaf_node('SynsetRelation',
                                      {'relType': rel['other_name'],
-                                      'target': f'{self.wordnet_id}-{self.dict_id}-{rel["other"]}'}, None)
+                                      'target': f'{self.wordnet_id}-{self.dict_id}-{rel["other"]}'})
         self.end_node('Synset')

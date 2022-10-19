@@ -5,6 +5,7 @@ from lv.ailab.tezdb.db_config import db_connection_info
 import sys
 
 from lv.ailab.tezdb.overview_querries import fetch_synsets, fetch_synseted_lexemes
+from lv.ailab.tezdb.single_entry_queries import fetch_synseted_senses_by_lexeme
 from lv.ailab.tezdb.single_sinset_queries import fetch_synset_senses, fetch_synset_lexemes, fetch_synset_relations, \
     fetch_omw_eq_relations
 from lv.ailab.tezlmf.lmf_output import LMFWriter
@@ -29,7 +30,8 @@ with open(filename, 'w', encoding='utf8') as f:
     lmf_printer.print_head(wordnet_vers)
     try:
         for lexeme in fetch_synseted_lexemes(connection):
-            lmf_printer.print_lexeme(lexeme)
+            synset_senses = fetch_synseted_senses_by_lexeme(connection, lexeme['id'])
+            lmf_printer.print_lexeme(lexeme, synset_senses)
     except BaseException as err:
         print("Lexeme was: " + lmf_printer.debug_id)
         raise
