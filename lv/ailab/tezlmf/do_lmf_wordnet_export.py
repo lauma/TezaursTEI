@@ -8,6 +8,7 @@ from lv.ailab.tezdb.overview_querries import fetch_synsets, fetch_synseted_lexem
 from lv.ailab.tezdb.single_entry_queries import fetch_synseted_senses_by_lexeme
 from lv.ailab.tezdb.single_sinset_queries import fetch_synset_senses, fetch_synset_lexemes, fetch_synset_relations, \
     fetch_omw_eq_relations
+from lv.ailab.tezlmf.ili import IliMapping
 from lv.ailab.tezlmf.lmf_output import LMFWriter
 
 # TODO: izrunas, LMF POS no tēzaura vārdšķiras
@@ -23,6 +24,7 @@ if dbname:
 else:
     dbname = db_connection_info['dbname']
 
+ili = IliMapping()
 connection = db_connect()
 filename = f'{db_connection_info["dbname"]}_lmf.xml'
 with open(filename, 'w', encoding='utf8') as f:
@@ -43,7 +45,7 @@ with open(filename, 'w', encoding='utf8') as f:
             omw_relations = fetch_omw_eq_relations(connection, synset_id)
             # Drukās netukšos sinsetus, šobrīd tas nozīmē, ka vajag definīciju un leksēmu.
             if synset_senses and synset_lexemes:
-                lmf_printer.print_synset(synset_id, synset_senses, synset_lexemes, relations, omw_relations)
+                lmf_printer.print_synset(synset_id, synset_senses, synset_lexemes, relations, omw_relations, ili)
     except BaseException as err:
         print("Synset was: " + lmf_printer.debug_id)
         raise

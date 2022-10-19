@@ -37,23 +37,23 @@ class LMFWriter(XMLWriter):
         lemma_params = {'writtenForm': lexeme['lemma'], 'partOfSpeech': lmfpos}
         self.do_simple_leaf_node('Lemma', lemma_params)
         for syn_sense in synseted_senses:
-            self.do_simple_leaf_node('Sense',
-                    {'id': f'{gen_id}-{lexeme["entry"]}-{syn_sense["sense_id"]}',
-                     'synset': f'{gen_id}-{syn_sense["synset_id"]}'})
+            self.do_simple_leaf_node('Sense', {'id': f'{gen_id}-{lexeme["entry"]}-{syn_sense["sense_id"]}',
+                                               'synset': f'{gen_id}-{syn_sense["synset_id"]}'})
         self.end_node('LexicalEntry')
 
-    def print_synset(self, synset_id, synset_senses, synset_lexemes, relations, omw_relations):
+    def print_synset(self, synset_id, synset_senses, synset_lexemes, relations, omw_relations, ili_map):
         item_id = f'{self.wordnet_id}-{self.dict_id}-{synset_id}'
         self.debug_id = item_id
         memberstr = ''
         for lexeme in synset_lexemes:
             memberstr = f'{memberstr} {self.wordnet_id}-{self.dict_id}-{lexeme["entry"]}-{lexeme["lexeme_id"]}'
-        ili = ''
+        pnw_id = None
         if omw_relations:
             if len(omw_relations) > 1:
                 print(f'Synset {synset_id} has more than 1 OMW relation.')
             elif omw_relations[0]:
-                ili = omw_relations[0]
+                pnw_id = omw_relations[0]
+        ili = ili_map.get_mapping(pnw_id)
 
         self.start_node('Synset', {'id': item_id, 'ili': ili, 'members': memberstr.strip()})
         unique_gloss = {}

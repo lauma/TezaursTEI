@@ -7,3 +7,7 @@ Requires psycopg2, which doesn't install cleanly on OSX and requires that postgr
 `export PATH=$PATH:/Library/PostgreSQL/11/bin/`
 
 `pip3 install psycopg2`
+
+## ILI <-> PWN 3.0 mapping
+
+To obtain correct LMF ili values, `config` folder must contain mapping file `ili-map-pwn30.tab` from https://github.com/globalwordnet/cili/blob/master/ili-map-pwn30.tab
