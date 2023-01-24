@@ -4,7 +4,7 @@ from lv.ailab.tezdb.db_config import db_connection_info
 
 import sys
 
-from lv.ailab.tezdb.overview_querries import fetch_synsets, fetch_synseted_lexemes
+from lv.ailab.tezdb.overview_querries import fetch_synsets, fetch_synseted_lexemes, get_dict_version
 from lv.ailab.tezdb.single_entry_queries import fetch_synseted_senses_by_lexeme
 from lv.ailab.tezdb.single_sinset_queries import fetch_synset_senses, fetch_synset_lexemes, fetch_synset_relations, \
     fetch_omw_eq_relations
@@ -16,6 +16,7 @@ wordnet_id = 'wordnet_lv'
 wordnet_vers = '1.0'
 connection = None
 dbname = None
+dict_version = None
 print_tags = True
 
 if len(sys.argv) > 1:
@@ -27,9 +28,11 @@ else:
 
 ili = IliMapping()
 connection = db_connect()
-filename = f'{db_connection_info["dbname"]}_lmf.xml'
+dict_version_data = get_dict_version(connection)
+dict_version = dict_version_data['tag']
+filename = f'{dict_version}_lmf.xml'
 with open(filename, 'w', encoding='utf8') as f:
-    lmf_printer = LMFWriter(f, dbname, wordnet_id)
+    lmf_printer = LMFWriter(f, dict_version, wordnet_id)
     lmf_printer.print_head(wordnet_vers)
     try:
         for lexeme in fetch_synseted_lexemes(connection):

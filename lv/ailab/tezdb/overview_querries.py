@@ -6,6 +6,18 @@ from psycopg2.extras import NamedTupleCursor
 
 
 # TODO paprasīt P un sataisīt smukāk kveriju veidošanu.
+
+def get_dict_version(connection):
+    cursor = connection.cursor(cursor_factory=NamedTupleCursor)
+    sql_synset_lexemes = f"""
+    SELECT title, info->'tag' #>> '{{}}' as tag, info->'counts'->'entries' #>> '{{}}' as entries
+    FROM {db_connection_info['schema']}.metadata
+"""
+    cursor.execute(sql_synset_lexemes)
+    row = cursor.fetchone()
+    return {'tag': row.tag, 'title': row.title, 'entries': row.entries}
+
+
 def fetch_entries(connection, omit_mwe=False, omit_wordparts=False, omit_pot_wordparts=False):
     cursor = connection.cursor(cursor_factory=NamedTupleCursor)
     where_clause = ""

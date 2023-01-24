@@ -6,11 +6,10 @@ default_newline_chars = "\n"
 
 class XMLWriter:
 
-    def __init__(self, file, dict_id, indent_chars=default_indent_chars, newline_chars=default_newline_chars):
+    def __init__(self, file, indent_chars=default_indent_chars, newline_chars=default_newline_chars):
         self.indent_chars = indent_chars
         self.newline_chars = newline_chars
         self.file = file
-        self.dict_id = dict_id
         self.gen = XMLGenerator(file, 'UTF-8', True)
         self.xml_depth = 0
 

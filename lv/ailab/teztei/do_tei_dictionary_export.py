@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from lv.ailab.tezdb.connection import db_connect
 from lv.ailab.tezdb.db_config import db_connection_info
-from lv.ailab.tezdb.overview_querries import fetch_entries
+from lv.ailab.tezdb.overview_querries import fetch_entries, get_dict_version
 from lv.ailab.teztei.tei_output import TEIWriter
 from lv.ailab.teztei.whitelist import EntryWhitelist
 
@@ -15,6 +15,7 @@ import sys
 
 connection = None
 dbname = None
+dict_version = None
 whitelist = None
 
 omit_wordparts = False
@@ -42,10 +43,12 @@ if whitelist is not None:
     filename_infix = "_filtered"
 
 connection = db_connect()
-filename = f'{db_connection_info["dbname"]}_tei{filename_infix}.xml'
+dict_version_data = get_dict_version(connection)
+dict_version = dict_version_data['tag']
+filename = f'{dict_version}_tei{filename_infix}.xml'
 with open(filename, 'w', encoding='utf8') as f:
-    tei_printer = TEIWriter(f, dbname, whitelist)
-    tei_printer.print_head()
+    tei_printer = TEIWriter(f, dict_version, whitelist)
+    tei_printer.print_head(dict_version_data['title'], dict_version_data['entries'])
     try:
         for entry in fetch_entries(connection, omit_mwe, omit_wordparts, omit_pot_wordparts):
             tei_printer.print_entry(entry)

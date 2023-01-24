@@ -4,7 +4,7 @@ REM Whitelist format: each line contains one allowed entryword and optional tab-
 ::python -m lv.ailab.teztei.do_tei_dictionary_export tezaurs_dv config/whitelist100.txt
 
 REM Exporting whole dictionary.
-::python -m lv.ailab.teztei.do_tei_dictionary_export mlvv_dv
-::python -m lv.ailab.teztei.do_tei_dictionary_export llvv_dv
-::python -m lv.ailab.teztei.do_tei_dictionary_export tezaurs_dv
+::python -m lv.ailab.teztei.do_tei_dictionary_export mlvv_current
+::python -m lv.ailab.teztei.do_tei_dictionary_export llvv_current
+python -m lv.ailab.teztei.do_tei_dictionary_export tezaurs_current
 pause

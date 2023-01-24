@@ -5,10 +5,12 @@ from lv.ailab.xmlutils.writer import XMLWriter
 class LMFWriter(XMLWriter):
     debug_id = 0
     wordnet_id = 0
+    dict_version = 0
 
-    def __init__(self, file, dict_id,  wordnet_id):
-        super().__init__(file, dict_id, "  ", "\n")
+    def __init__(self, file, dict_version, wordnet_id):
+        super().__init__(file, "  ", "\n")
         self.wordnet_id = wordnet_id
+        self.dict_version = dict_version
 
     def print_head(self, wordnet_vers):
         self.start_document('<!DOCTYPE LexicalResource SYSTEM "http://globalwordnet.github.io/schemas/WN-LMF-1.1.dtd">')
@@ -20,7 +22,9 @@ class LMFWriter(XMLWriter):
                                     'license': 'https://creativecommons.org/licenses/by-nc/4.0/',
                                     'version': wordnet_vers,
                                     'url': 'https://wordnet.ailab.lv/',
-                                    'citation': 'TODO',
+                                    'citation': 'Peteris Paikens, Agute Klints, Ilze Lokmane, Lauma Pretkalniņa, Laura '
+                                                + 'Rituma, Madara Stāde and Laine Strankale. Latvian WordNet. '
+                                                + 'Proceedings of Global Wordnet Conference, 2023.',
                                     'logo': 'https://wordnet.ailab.lv/images/mazais-logo-ailab.svg'})
 
     def print_tail(self):
@@ -29,10 +33,10 @@ class LMFWriter(XMLWriter):
         self.end_document()
 
     def print_lexeme(self, lexeme, synseted_senses, print_tags):
-        gen_id = f'{self.wordnet_id}-{self.dict_id}'
+        gen_id = f'{self.wordnet_id}-{self.dict_version}'
         item_id = f'{gen_id}-{lexeme["entry"]}-{lexeme["id"]}'
         self.debug_id = item_id
-        self.start_node('LexicalEntry', {'id':  item_id})
+        self.start_node('LexicalEntry', {'id': item_id})
         lmfpos = lmfiy_pos(lexeme['pos'], lexeme['abbr_type'], lexeme['lemma'])
         lemma_params = {'writtenForm': lexeme['lemma'], 'partOfSpeech': lmfpos}
         self.do_simple_leaf_node('Lemma', lemma_params)
@@ -46,11 +50,11 @@ class LMFWriter(XMLWriter):
         self.end_node('LexicalEntry')
 
     def print_synset(self, synset_id, synset_senses, synset_lexemes, relations, omw_relations, ili_map):
-        item_id = f'{self.wordnet_id}-{self.dict_id}-{synset_id}'
+        item_id = f'{self.wordnet_id}-{self.dict_version}-{synset_id}'
         self.debug_id = item_id
         memberstr = ''
         for lexeme in synset_lexemes:
-            memberstr = f'{memberstr} {self.wordnet_id}-{self.dict_id}-{lexeme["entry"]}-{lexeme["lexeme_id"]}'
+            memberstr = f'{memberstr} {self.wordnet_id}-{self.dict_version}-{lexeme["entry"]}-{lexeme["lexeme_id"]}'
         pnw_id = None
         if omw_relations:
             if len(omw_relations) > 1:
@@ -69,5 +73,5 @@ class LMFWriter(XMLWriter):
         for rel in relations:
             self.do_simple_leaf_node('SynsetRelation',
                                      {'relType': rel['other_name'],
-                                      'target': f'{self.wordnet_id}-{self.dict_id}-{rel["other"]}'})
+                                      'target': f'{self.wordnet_id}-{self.dict_version}-{rel["other"]}'})
         self.end_node('Synset')

@@ -5,10 +5,13 @@ from lv.ailab.xmlutils.writer import XMLWriter
 
 
 class TEIWriter(XMLWriter):
-    def __init__(self, file, dict_id, whitelist=None):
-        super().__init__(file, dict_id, "  ", "\n")
+    dict_version = 0
+
+    def __init__(self, file, dict_version, whitelist=None):
+        super().__init__(file, "  ", "\n")
         self.whitelist = whitelist
         self.debug_entry_id = ''
+        self.dict_version = dict_version
 
     def _do_leaf_node(self, name, attrs, content, mentions=False):
         self.gen.ignorableWhitespace(self.indent_chars * self.xml_depth)
@@ -36,12 +39,52 @@ class TEIWriter(XMLWriter):
                 is_mentioned = True
             self.gen.characters(part)
         if is_mentioned:
-            self.gen.endElement(is_mentioned)
+            self.gen.endElement('mentioned')
 
-    def print_head(self):
+    def print_head(self, edition='TODO', entrie_count='TODO'):
         self.start_document()
         self.start_node('TEI', {})
-        self._do_leaf_node('teiHeader', {}, 'TODO')
+        self.start_node('fileDesc', {})
+        self.start_node('titleStmt', {})
+        self._do_leaf_node('title', {}, 'Tēzaurs.lv - dictionary and thesaurus of Latvian')
+        self._do_leaf_node('editor', {}, 'Andrejs Spektors et al.')
+        self.end_node('titleStmt')
+        self.start_node('editionStmt', {})
+        self._do_leaf_node('edition', {}, edition)
+        self.end_node('editionStmt')
+        self._do_leaf_node('extent', {}, entrie_count)
+        self.start_node('publicationStmt', {})
+        self._do_leaf_node('publisher', {},
+                           'AI Lab at the Institute of Mathematics and Computer Science, University of Latvia')
+        self.start_node('availability', {'status': 'free'})
+
+        self.gen.ignorableWhitespace(self.indent_chars * self.xml_depth)
+        self.gen.startElement('p', {})
+        self.gen.characters('Copyright (C) 2009-2019 by ')
+        self.gen.startElement('ref', {'target': 'http://ailab.lv/'})
+        self.gen.characters('AI Lab')
+        self.gen.endElement('ref')
+        self.gen.characters(', IMCS, UL.')
+        self.gen.endElement('p')
+        self.gen.ignorableWhitespace(self.newline_chars)
+
+        self.gen.ignorableWhitespace(self.indent_chars * self.xml_depth)
+        self.gen.startElement('p', {})
+        self.gen.characters('Available under ')
+        self.gen.startElement('ref', {'target': 'https://creativecommons.org/licenses/by-sa/4.0/'})
+        self.gen.characters('Creative Commons Attribution-ShareAlike 4.0 International License')
+        self.gen.endElement('ref')
+        self.gen.characters('.')
+        self.gen.endElement('p')
+        self.gen.ignorableWhitespace(self.newline_chars)
+
+        self.end_node('availability')
+        self.end_node('publicationStmt')
+        self.start_node('sourceDesc', {})
+        self._do_leaf_node('p', {'ref': 'https://tezaurs.lv/'}, 'Tezaurs.lv')
+        self.end_node('sourceDesc')
+        self.end_node('fileDesc')
+
         self.start_node('body', {})
 
     def print_tail(self):
@@ -55,7 +98,7 @@ class TEIWriter(XMLWriter):
         if self.whitelist is not None and not self.whitelist.check(entry['headword'], entry['hom_id']):
             return
         self.debug_entry_id = entry['id']
-        entry_id = f'{self.dict_id}/{entry["id"]}'
+        entry_id = f'{self.dict_version}/{entry["id"]}'
         entry_params = {'id': entry_id, 'sortKey': entry['headword']}
         main_lexeme = entry['lexemes'][0]
         if entry['hom_id'] > 0:
@@ -83,7 +126,7 @@ class TEIWriter(XMLWriter):
             is_first = False
         if 'senses' in entry:
             for sense in entry['senses']:
-                self.print_sense(sense, f'{self.dict_id}/{entry["id"]}')
+                self.print_sense(sense, f'{self.dict_version}/{entry["id"]}')
         if 'etym' in entry:
             self._do_leaf_node('etym', {}, entry['etym'], True)
         self.end_node('entry')
@@ -207,24 +250,25 @@ class TEIWriter(XMLWriter):
 
     def print_synset_related(self, synset_id, synset_senses, synset_rels, gradset):
         if synset_senses:
-            self.start_node('xr', {'type': 'synset', 'id': f'{self.dict_id}/synset:{synset_id}'})
+            self.start_node('xr', {'type': 'synset', 'id': f'{self.dict_version}/synset:{synset_id}'})
             for synset_sense in synset_senses:
                 # TODO use hard ids when those are fixed
-                self._do_leaf_node('ref', {}, f'{self.dict_id}/{synset_sense["softid"]}')
+                self._do_leaf_node('ref', {}, f'{self.dict_version}/{synset_sense["softid"]}')
             self.end_node('xr')
         if synset_rels:
             for synset_rel in synset_rels:
                 self.start_node('xr', {'type': f'{synset_rel["other_name"]}'})
-                self._do_leaf_node('ref', {}, f'{self.dict_id}/synset:{synset_rel["other"]}')
+                self._do_leaf_node('ref', {}, f'{self.dict_version}/synset:{synset_rel["other"]}')
                 self.end_node('xr')
         if gradset:
-            self.start_node('xr', {'type': 'gradation_set', 'id': f'{self.dict_id}/gradset:{gradset["gradset_id"]}'})
+            self.start_node('xr',
+                            {'type': 'gradation_set', 'id': f'{self.dict_version}/gradset:{gradset["gradset_id"]}'})
             for synset in gradset['member_synsets']:
-                self._do_leaf_node('ref', {}, f'{self.dict_id}/synset:{synset}')
+                self._do_leaf_node('ref', {}, f'{self.dict_version}/synset:{synset}')
             self.end_node('xr')
             if gradset['gradset_cat']:
                 self.start_node('xr', {'type': 'gradation_class'})
-                self._do_leaf_node('ref', {}, f'{self.dict_id}/synset:{gradset["gradset_cat"]}')
+                self._do_leaf_node('ref', {}, f'{self.dict_version}/synset:{gradset["gradset_cat"]}')
                 self.end_node('xr')
 
 
