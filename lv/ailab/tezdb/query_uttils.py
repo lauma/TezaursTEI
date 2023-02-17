@@ -1,4 +1,4 @@
-def extract_gram(element):
+def extract_gram(element, omit_flags):
     result = {}
     # Legacy POS logic to be substituted with general flag processing
     # if element.paradigm_data and 'Vārdšķira' in element.paradigm_data:
@@ -23,10 +23,17 @@ def extract_gram(element):
         result['flags'] = {}
         result['flags'] = element.data['Gram']['Flags']
     # including flag inheritance from paradigms
-    if hasattr(element, 'paradigm_data') and element.paradigm_data:
-        for key in element.paradigm_data.keys():
-            if not element.paradigm_data[key]:
-                result['flags'][key] = element.paradigm_data[key]
+    try:
+        if element.paradigm_data:
+            for key in element.paradigm_data.keys():
+                if omit_flags and key in omit_flags:
+                    continue
+                if 'flags' not in result or not result['flags']:
+                    result['flags'] = {}
+                if key not in result['flags'] or not result['flags'][key]:
+                    result['flags'][key] = element.paradigm_data[key]
+    except AttributeError:
+        pass
 
     # Structural restrictions
     if element.data and 'Gram' in element.data and 'StructuralRestrictions' in element.data['Gram'] \

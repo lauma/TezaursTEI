@@ -7,15 +7,20 @@ from psycopg2.extras import NamedTupleCursor
 
 # TODO paprasīt P un sataisīt smukāk kveriju veidošanu.
 
+#TODO
 def get_dict_version(connection):
     cursor = connection.cursor(cursor_factory=NamedTupleCursor)
     sql_synset_lexemes = f"""
-    SELECT title, info->'tag' #>> '{{}}' as tag, info->'counts'->'entries' #>> '{{}}' as entries
+    SELECT title, extract(YEAR from release_timestamp) as year, info->'tag' #>> '{{}}' as tag,
+        info->'counts'->'entries' #>> '{{}}' as entries, info->'counts'->'lexemes' #>> '{{}}' as lexemes,
+        info->'counts'->'senses' #>> '{{}}' as senses
     FROM {db_connection_info['schema']}.metadata
 """
     cursor.execute(sql_synset_lexemes)
     row = cursor.fetchone()
-    return {'tag': row.tag, 'title': row.title, 'entries': row.entries}
+    return {
+        'tag': row.tag, 'title': row.title, 'entries': row.entries, 'lexemes': row.lexemes,
+        'senses': row.senses, 'year': row.year}
 
 
 def fetch_entries(connection, omit_mwe=False, omit_wordparts=False, omit_pot_wordparts=False):
@@ -47,7 +52,7 @@ ORDER BY type_id, heading
             result = {'id': row.human_key, 'hom_id': row.homonym_no, 'type': row.type_name, 'headword': row.heading}
             if row.etym:
                 result['etym'] = row.etym
-            gram_dict = extract_gram(row)
+            gram_dict = extract_gram(row, None)
             result.update(gram_dict)
 
             lexemes = fetch_lexemes(connection, row.id, row.primary_lexeme_id)

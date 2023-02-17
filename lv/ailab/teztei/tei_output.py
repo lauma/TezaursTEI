@@ -41,7 +41,7 @@ class TEIWriter(XMLWriter):
         if is_mentioned:
             self.gen.endElement('mentioned')
 
-    def print_head(self, edition='TODO', entrie_count='TODO'):
+    def print_head(self, edition='TODO', entry_count='TODO', lexeme_count='TODO', sense_count='TODO', year='TODO'):
         self.start_document()
         self.start_node('TEI', {})
         self.start_node('fileDesc', {})
@@ -52,7 +52,11 @@ class TEIWriter(XMLWriter):
         self.start_node('editionStmt', {})
         self._do_leaf_node('edition', {}, edition)
         self.end_node('editionStmt')
-        self._do_leaf_node('extent', {}, entrie_count)
+        self.start_node('extent', {})
+        self._do_leaf_node('measure', {'unit': 'entry', 'quantity': entry_count}, None)
+        self._do_leaf_node('measure', {'unit': 'lexeme', 'quantity': lexeme_count}, None)
+        self._do_leaf_node('measure', {'unit': 'sense', 'quantity': sense_count}, None)
+        self.end_node('extent')
         self.start_node('publicationStmt', {})
         self._do_leaf_node('publisher', {},
                            'AI Lab at the Institute of Mathematics and Computer Science, University of Latvia')
@@ -60,7 +64,7 @@ class TEIWriter(XMLWriter):
 
         self.gen.ignorableWhitespace(self.indent_chars * self.xml_depth)
         self.gen.startElement('p', {})
-        self.gen.characters('Copyright (C) 2009-2019 by ')
+        self.gen.characters(f'Copyright (C) 2009-{year} by ')
         self.gen.startElement('ref', {'target': 'http://ailab.lv/'})
         self.gen.characters('AI Lab')
         self.gen.endElement('ref')

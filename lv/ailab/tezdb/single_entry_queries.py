@@ -29,7 +29,7 @@ ORDER BY (l.id!={main_lex_id}), order_no
         if lexeme.data and 'Pronunciations' in lexeme.data:
             lexeme_dict['pronun'] = lexeme.data['Pronunciations']
 
-        gram_dict = extract_gram(lexeme)
+        gram_dict = extract_gram(lexeme, {'Stems'})
         lexeme_dict.update(gram_dict)
         result.append(lexeme_dict)
     return result
@@ -78,7 +78,7 @@ ORDER BY order_no
         # sense_data = json.loads(sense.data)
         subsenses = fetch_senses(connection, entry_id, sense.id)
         sense_dict = {'ord': sense.order_no, 'gloss': sense.gloss}
-        gram_dict = extract_gram(sense)
+        gram_dict = extract_gram(sense, None)
         sense_dict.update(gram_dict)
         if sense.synset_id:
             sense_dict['synset_id'] = sense.synset_id
