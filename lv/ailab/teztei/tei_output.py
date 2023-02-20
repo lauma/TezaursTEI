@@ -104,6 +104,7 @@ class TEIWriter(XMLWriter):
                 self._do_leaf_node('bibl', {'id': source['abbr'], 'url': source['url']}, source['title'], True)
             else:
                 self._do_leaf_node('bibl', {'id': source['abbr']}, source['title'], True)
+        self.do_simple_leaf_node('bibl', {'id': 'MORPHO', 'url': 'https://github.com/PeterisP/morphology'}, 'Peteris Paikens. Latvian Morphology Module. GitHub.')
         self.end_node('listBibl')
         self.end_node('back')
 
@@ -142,10 +143,10 @@ class TEIWriter(XMLWriter):
         if 'senses' in entry:
             for sense in entry['senses']:
                 self.print_sense(sense, f'{self.dict_version}/{entry["id"]}')
-        if 'sources' in entry:
-            self.print_sources(entry['sources'])
         if 'etym' in entry:
             self._do_leaf_node('etym', {}, entry['etym'], True)
+        if 'sources' in entry:
+            self.print_entry_sources(entry['sources'])
         self.end_node('entry')
 
     def print_lexeme(self, lexeme, headword, entry_type, is_main=False):
@@ -198,7 +199,7 @@ class TEIWriter(XMLWriter):
             #    if 'stem_past' in parent['paradigm']:
             #        paradigm_text = paradigm_text + parent['paradigm']['stem_past']
 
-            self._do_leaf_node('iType', {'type': 'https://github.com/PeterisP/morphology'}, paradigm_text)
+            self._do_leaf_node('iType', {'type': 'computational', 'corresp': '#MORPHO'}, paradigm_text)
         elif 'infl_text' in parent:
             self._do_leaf_node('iType', {}, parent['infl_text'])
 
@@ -265,17 +266,17 @@ class TEIWriter(XMLWriter):
                 self.print_sense(subsense, sense_id)
         self.end_node('sense')
 
-    def print_sources(self, sources):
+    def print_entry_sources(self, sources):
         if not sources:
             return
         self.start_node('listBibl', {})
         for source in sources:
             if source['details']:
-                self.start_node('bibl', {'corresp': source['abbr']})
+                self.start_node('bibl', {'corresp': f"#{source['abbr']}"})
                 self.do_simple_leaf_node('biblScope', {}, source['details'])
                 self.end_node('bibl')
             else:
-                self.do_simple_leaf_node('bibl', {'corresp': source['abbr']})
+                self.do_simple_leaf_node('bibl', {'corresp': f"#{source['abbr']}"})
         self.end_node('listBibl')
 
     def print_synset_related(self, synset_id, synset_senses, synset_rels, gradset):
