@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from lv.ailab.tezdb.connection import db_connect
 from lv.ailab.tezdb.db_config import db_connection_info
-from lv.ailab.tezdb.overview_querries import fetch_entries, get_dict_version
+from lv.ailab.tezdb.overview_querries import fetch_entries, get_dict_version, fetch_sources
 from lv.ailab.teztei.tei_output import TEIWriter
 from lv.ailab.teztei.whitelist import EntryWhitelist
 
@@ -57,5 +57,6 @@ with open(filename, 'w', encoding='utf8') as f:
     except BaseException as err:
         print("Entry was: " + tei_printer.debug_entry_id)
         raise
+    tei_printer.print_back_matter(fetch_sources(connection))
     tei_printer.print_tail()
 print(f'Done! Output written to {filename}')

@@ -91,6 +91,28 @@ ORDER BY order_no
     return result
 
 
+def fetch_entry_sources(connection, entry_id):
+    if not entry_id:
+        return
+    cursor = connection.cursor(cursor_factory=NamedTupleCursor)
+    sql_sources = f"""
+    SELECT abbr, data->'sourceDetails' as details
+    FROM {db_connection_info['schema']}.source_links scl
+    JOIN {db_connection_info['schema']}.sources sc ON scl.source_id = sc.id
+    WHERE entry_id = {entry_id}
+    ORDER BY order_no
+    """
+    cursor.execute(sql_sources)
+    sources = cursor.fetchall()
+    if not sources:
+        return
+    result = []
+    for source in sources:
+        source_dict = {'abbr': source.abbr, 'details': source.details}
+        result.append(source_dict)
+    return result
+
+
 def fetch_synseted_senses_by_lexeme(connection, lexeme_id):
     if not lexeme_id:
         return

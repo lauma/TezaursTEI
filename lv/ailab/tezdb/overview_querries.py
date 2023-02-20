@@ -1,6 +1,6 @@
 from lv.ailab.tezdb.db_config import db_connection_info
 from lv.ailab.tezdb.query_uttils import extract_gram, extract_paradigm_stems
-from lv.ailab.tezdb.single_entry_queries import fetch_lexemes, fetch_senses
+from lv.ailab.tezdb.single_entry_queries import fetch_lexemes, fetch_senses, fetch_entry_sources
 
 from psycopg2.extras import NamedTupleCursor
 
@@ -10,18 +10,32 @@ from psycopg2.extras import NamedTupleCursor
 #TODO
 def get_dict_version(connection):
     cursor = connection.cursor(cursor_factory=NamedTupleCursor)
-    sql_synset_lexemes = f"""
+    sql_dict_properties = f"""
     SELECT title, extract(YEAR from release_timestamp) as year, info->'tag' #>> '{{}}' as tag,
         info->'counts'->'entries' #>> '{{}}' as entries, info->'counts'->'lexemes' #>> '{{}}' as lexemes,
         info->'counts'->'senses' #>> '{{}}' as senses
     FROM {db_connection_info['schema']}.metadata
 """
-    cursor.execute(sql_synset_lexemes)
+    cursor.execute(sql_dict_properties)
     row = cursor.fetchone()
     return {
         'tag': row.tag, 'title': row.title, 'entries': row.entries, 'lexemes': row.lexemes,
         'senses': row.senses, 'year': row.year}
 
+def fetch_sources(connection):
+    cursor = connection.cursor(cursor_factory=NamedTupleCursor)
+    sql_dict_sources = f"""
+        SELECT abbr, title, url
+        FROM {db_connection_info['schema']}.sources
+        ORDER BY abbr ASC
+    """
+    cursor.execute(sql_dict_sources)
+    while True:
+        rows = cursor.fetchmany(1000)
+        if not rows:
+            break
+        for row in rows:
+            yield {'abbr': row.abbr, 'title': row.title, 'url': row.url}
 
 def fetch_entries(connection, omit_mwe=False, omit_wordparts=False, omit_pot_wordparts=False):
     cursor = connection.cursor(cursor_factory=NamedTupleCursor)
@@ -71,6 +85,9 @@ ORDER BY type_id, heading
             senses = fetch_senses(connection, row.id)
             if senses:
                 result['senses'] = senses
+            sources = fetch_entry_sources(connection, row.id)
+            if sources:
+                result['sources'] = sources
             yield result
         print(f'entries: {counter}\r')
 

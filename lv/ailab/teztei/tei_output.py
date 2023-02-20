@@ -96,6 +96,17 @@ class TEIWriter(XMLWriter):
         self.end_node('TEI')
         self.end_document()
 
+    def print_back_matter(self, sources):
+        self.start_node('back', {})
+        self.start_node('listBibl', {})
+        for source in sources:
+            if 'url' in source and source['url']:
+                self._do_leaf_node('bibl', {'id': source['abbr'], 'url': source['url']}, source['title'], True)
+            else:
+                self._do_leaf_node('bibl', {'id': source['abbr']}, source['title'], True)
+        self.end_node('listBibl')
+        self.end_node('back')
+
     # TODO: sakārtot, lai drukā ar jauno leksēmu drukāšanas funkciju un visas leksēmas
     def print_entry(self, entry):
         # if self.whitelist is not None and not self.whitelist.check(entry['mainLexeme']['lemma'], entry['hom_id']):
@@ -131,6 +142,8 @@ class TEIWriter(XMLWriter):
         if 'senses' in entry:
             for sense in entry['senses']:
                 self.print_sense(sense, f'{self.dict_version}/{entry["id"]}')
+        if 'sources' in entry:
+            self.print_sources(entry['sources'])
         if 'etym' in entry:
             self._do_leaf_node('etym', {}, entry['etym'], True)
         self.end_node('entry')
@@ -251,6 +264,19 @@ class TEIWriter(XMLWriter):
             for subsense in sense['subsenses']:
                 self.print_sense(subsense, sense_id)
         self.end_node('sense')
+
+    def print_sources(self, sources):
+        if not sources:
+            return
+        self.start_node('listBibl', {})
+        for source in sources:
+            if source['details']:
+                self.start_node('bibl', {'corresp': source['abbr']})
+                self.do_simple_leaf_node('biblScope', {}, source['details'])
+                self.end_node('bibl')
+            else:
+                self.do_simple_leaf_node('bibl', {'corresp': source['abbr']})
+        self.end_node('listBibl')
 
     def print_synset_related(self, synset_id, synset_senses, synset_rels, gradset):
         if synset_senses:
