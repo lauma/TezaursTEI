@@ -7,20 +7,21 @@ from psycopg2.extras import NamedTupleCursor
 
 # TODO paprasīt P un sataisīt smukāk kveriju veidošanu.
 
-#TODO
+# TODO
 def get_dict_version(connection):
     cursor = connection.cursor(cursor_factory=NamedTupleCursor)
     sql_dict_properties = f"""
-    SELECT title, extract(YEAR from release_timestamp) as year, info->'tag' #>> '{{}}' as tag,
-        info->'counts'->'entries' #>> '{{}}' as entries, info->'counts'->'lexemes' #>> '{{}}' as lexemes,
-        info->'counts'->'senses' #>> '{{}}' as senses
+    SELECT title, extract(YEAR from release_timestamp) as year, extract(MONTH from release_timestamp) as month,
+        info->'tag' #>> '{{}}' as tag, info->'counts'->'entries' #>> '{{}}' as entries,
+        info->'counts'->'lexemes' #>> '{{}}' as lexemes, info->'counts'->'senses' #>> '{{}}' as senses
     FROM {db_connection_info['schema']}.metadata
 """
     cursor.execute(sql_dict_properties)
     row = cursor.fetchone()
     return {
         'tag': row.tag, 'title': row.title, 'entries': row.entries, 'lexemes': row.lexemes,
-        'senses': row.senses, 'year': row.year}
+        'senses': row.senses, 'year': row.year, 'month': row.month}
+
 
 def fetch_sources(connection):
     cursor = connection.cursor(cursor_factory=NamedTupleCursor)
@@ -36,6 +37,7 @@ def fetch_sources(connection):
             break
         for row in rows:
             yield {'abbr': row.abbr, 'title': row.title, 'url': row.url}
+
 
 def fetch_entries(connection, omit_mwe=False, omit_wordparts=False, omit_pot_wordparts=False):
     cursor = connection.cursor(cursor_factory=NamedTupleCursor)

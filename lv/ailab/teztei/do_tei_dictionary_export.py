@@ -50,7 +50,7 @@ with open(filename, 'w', encoding='utf8') as f:
     tei_printer = TEIWriter(f, dict_version, whitelist)
     tei_printer.print_head(
         dict_version_data['title'], dict_version_data['entries'], dict_version_data['lexemes'],
-        dict_version_data['senses'], dict_version_data['year'])
+        dict_version_data['senses'], dict_version_data['year'], dict_version_data['month'])
     try:
         for entry in fetch_entries(connection, omit_mwe, omit_wordparts, omit_pot_wordparts):
             tei_printer.print_entry(entry)

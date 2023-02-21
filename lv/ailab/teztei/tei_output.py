@@ -27,21 +27,20 @@ class TEIWriter(XMLWriter):
         parts = re.split('</?(?:em|i)>', content)
         is_mentioned = False
         if re.match('^</?(?:em|i)>', content):
+            parts.pop(0)
             is_mentioned = True
-            self.gen.startElement('mentioned', {})
-        self.gen.characters(parts.pop(0))
         for part in parts:
             if is_mentioned:
+                self.gen.startElement('mentioned', {})
+                self.gen.characters(part)
                 self.gen.endElement('mentioned')
                 is_mentioned = False
             else:
-                self.gen.startElement('mentioned', {})
+                self.gen.characters(part)
                 is_mentioned = True
-            self.gen.characters(part)
-        if is_mentioned:
-            self.gen.endElement('mentioned')
 
-    def print_head(self, edition='TODO', entry_count='TODO', lexeme_count='TODO', sense_count='TODO', year='TODO'):
+    def print_head(self, edition='TODO', entry_count='TODO', lexeme_count='TODO', sense_count='TODO',
+                   year='TODO', month='TODO'):
         self.start_document()
         self.start_node('TEI', {})
         self.start_node('fileDesc', {})
@@ -58,29 +57,23 @@ class TEIWriter(XMLWriter):
         self._do_leaf_node('measure', {'unit': 'sense', 'quantity': sense_count}, None)
         self.end_node('extent')
         self.start_node('publicationStmt', {})
+        self._do_leaf_node('date', {}, f"{year}-{month}")
         self._do_leaf_node('publisher', {},
-                           'AI Lab at the Institute of Mathematics and Computer Science, University of Latvia')
+                           'AI Lab at Institute of Mathematics and Computer Science, University of Latvia')
         self.start_node('availability', {'status': 'free'})
 
         self.gen.ignorableWhitespace(self.indent_chars * self.xml_depth)
         self.gen.startElement('p', {})
-        self.gen.characters(f'Copyright (C) 2009-{year} by ')
+        self.gen.characters(f'Copyright (C) 2009-{year},')
         self.gen.startElement('ref', {'target': 'http://ailab.lv/'})
         self.gen.characters('AI Lab')
         self.gen.endElement('ref')
-        self.gen.characters(', IMCS, UL.')
+        self.gen.characters(' at IMCS, University of Latvia.')
         self.gen.endElement('p')
         self.gen.ignorableWhitespace(self.newline_chars)
 
-        self.gen.ignorableWhitespace(self.indent_chars * self.xml_depth)
-        self.gen.startElement('p', {})
-        self.gen.characters('Available under ')
-        self.gen.startElement('ref', {'target': 'https://creativecommons.org/licenses/by-sa/4.0/'})
-        self.gen.characters('Creative Commons Attribution-ShareAlike 4.0 International License')
-        self.gen.endElement('ref')
-        self.gen.characters('.')
-        self.gen.endElement('p')
-        self.gen.ignorableWhitespace(self.newline_chars)
+        self.do_simple_leaf_node('licence', {'target': 'https://creativecommons.org/licenses/by-sa/4.0/'},
+                                 'Creative Commons Attribution-ShareAlike 4.0 International License')
 
         self.end_node('availability')
         self.end_node('publicationStmt')
@@ -100,11 +93,14 @@ class TEIWriter(XMLWriter):
         self.start_node('back', {})
         self.start_node('listBibl', {})
         for source in sources:
+            # FIXME būtu labi, ja te varētu gudrāk dalīt elementos.
+            title = re.sub('</?(?:em|i)>', '', source['title'])
             if 'url' in source and source['url']:
-                self._do_leaf_node('bibl', {'id': source['abbr'], 'url': source['url']}, source['title'], True)
+                self.do_simple_leaf_node('bibl', {'id': source['abbr'], 'url': source['url']}, title)
             else:
-                self._do_leaf_node('bibl', {'id': source['abbr']}, source['title'], True)
-        self.do_simple_leaf_node('bibl', {'id': 'MORPHO', 'url': 'https://github.com/PeterisP/morphology'}, 'Peteris Paikens. Latvian Morphology Module. GitHub.')
+                self.do_simple_leaf_node('bibl', {'id': source['abbr']}, title)
+        self.do_simple_leaf_node('bibl', {'id': 'MORPHO', 'url': 'https://github.com/PeterisP/morphology'},
+                                 'Paikens P. Morphological Analyzer and Synthesizer for Latvian. Institute of Mathematics and Computer Science, University of Latvia, 2005-2022.')
         self.end_node('listBibl')
         self.end_node('back')
 
