@@ -44,42 +44,51 @@ class TEIWriter(XMLWriter):
         self.start_document()
         self.start_node('TEI', {})
         self.start_node('fileDesc', {})
+
         self.start_node('titleStmt', {})
-        self._do_leaf_node('title', {}, 'Tēzaurs.lv - dictionary and thesaurus of Latvian')
+        self.gen.ignorableWhitespace(self.indent_chars * self.xml_depth)
+        self.gen.startElement('title', {})
+        self.gen.startElement('ref', {'target': 'https://tezaurs.lv'})
+        self.gen.characters('Tēzaurs.lv')
+        self.gen.endElement('ref')
+        self.gen.characters(' - dictionary and thesaurus of Latvian')
+        self.gen.endElement('title')
+        self.gen.ignorableWhitespace(self.newline_chars)
         self._do_leaf_node('editor', {}, 'Andrejs Spektors et al.')
         self.end_node('titleStmt')
+
         self.start_node('editionStmt', {})
         self._do_leaf_node('edition', {}, edition)
         self.end_node('editionStmt')
+
         self.start_node('extent', {})
         self._do_leaf_node('measure', {'unit': 'entry', 'quantity': entry_count}, None)
         self._do_leaf_node('measure', {'unit': 'lexeme', 'quantity': lexeme_count}, None)
         self._do_leaf_node('measure', {'unit': 'sense', 'quantity': sense_count}, None)
         self.end_node('extent')
+
         self.start_node('publicationStmt', {})
         self._do_leaf_node('date', {}, f"{year}-{month}")
         self._do_leaf_node('publisher', {},
-                           'AI Lab at Institute of Mathematics and Computer Science, University of Latvia')
+                           'Institute of Mathematics and Computer Science, University of Latvia')
         self.start_node('availability', {'status': 'free'})
 
         self.gen.ignorableWhitespace(self.indent_chars * self.xml_depth)
         self.gen.startElement('p', {})
-        self.gen.characters(f'Copyright (C) 2009-{year},')
-        self.gen.startElement('ref', {'target': 'http://ailab.lv/'})
+        self.gen.characters(f'Copyright 2009-{year}, ')
+        self.gen.startElement('ref', {'target': 'https://ailab.lv'})
         self.gen.characters('AI Lab')
         self.gen.endElement('ref')
-        self.gen.characters(' at IMCS, University of Latvia.')
+        self.gen.characters(' at IMCS, University of Latvia')
         self.gen.endElement('p')
         self.gen.ignorableWhitespace(self.newline_chars)
 
         self.do_simple_leaf_node('licence', {'target': 'https://creativecommons.org/licenses/by-sa/4.0/'},
                                  'Creative Commons Attribution-ShareAlike 4.0 International License')
-
         self.end_node('availability')
+        self.do_simple_leaf_node('ptr', {'target': 'http://hdl.handle.net/TODO'})
         self.end_node('publicationStmt')
-        self.start_node('sourceDesc', {})
-        self._do_leaf_node('p', {'ref': 'https://tezaurs.lv/'}, 'Tezaurs.lv')
-        self.end_node('sourceDesc')
+
         self.end_node('fileDesc')
 
         self.start_node('body', {})
