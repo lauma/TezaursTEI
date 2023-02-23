@@ -4,7 +4,8 @@ Scripts to prepare an offline TEI and LMF exports from the Tezaurs.lv database.
 - TEI export is done according to TEI 5 Chapter 9 "Dictionaries": https://tei-c.org/release/doc/tei-p5-doc/en/html/DI.html
 - LMF export is done according to Global Wordnet Asociation XML chapter: https://globalwordnet.github.io/schemas/#xml
 
-## Development Notes
+## Dev Notes
+
 ### Install
 
 Requires psycopg2, which doesn't install cleanly on OSX and requires that postgresql is installed via brew (not the downloaded .dmg installer) and the following
@@ -22,3 +23,7 @@ To obtain correct LMF ili values, `config` folder must contain mapping file `ili
 
 - The extensive validator is here: https://github.com/globalwordnet/OMW
 - There is also Python package wm that contains simpler validator: https://wn.readthedocs.io/en/latest/cli.html . Command to use it is `python -m wn validate tezaurs_version-number_lmf.xml`
+
+### TEI validation
+
+- Currently no good tools are known for general TEI, but XML well-formed-ness can be checked with general XML tools or with Notepad++ plugin _XML tools_.
