@@ -1,8 +1,5 @@
-*_tei.xml
-*_tei_filtered.xml
-*_lmf.xml
-* - Copy.xml
 *.zip
+*.xml
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
