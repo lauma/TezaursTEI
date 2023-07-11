@@ -12,7 +12,7 @@ def get_dict_version(connection):
     cursor = connection.cursor(cursor_factory=NamedTupleCursor)
     sql_dict_properties = f"""
     SELECT title, extract(YEAR from release_timestamp) as year, extract(MONTH from release_timestamp) as month,
-        info->'tag' #>> '{{}}' as tag, info->'counts'->'entries' #>> '{{}}' as entries,
+        info->'dictionary' #>> '{{}}' as dictionary, info->'tag' #>> '{{}}' as tag, info->'counts'->'entries' #>> '{{}}' as entries,
         info->'counts'->'lexemes' #>> '{{}}' as lexemes, info->'counts'->'senses' #>> '{{}}' as senses
     FROM {db_connection_info['schema']}.metadata
 """
@@ -20,7 +20,7 @@ def get_dict_version(connection):
     row = cursor.fetchone()
     return {
         'tag': row.tag, 'title': row.title, 'entries': row.entries, 'lexemes': row.lexemes,
-        'senses': row.senses, 'year': row.year, 'month': row.month}
+        'senses': row.senses, 'year': row.year, 'month': row.month, 'dictionary': row.dictionary}
 
 
 def fetch_sources(connection):

@@ -39,22 +39,27 @@ class TEIWriter(XMLWriter):
                 self.gen.characters(part)
                 is_mentioned = True
 
-    def print_head(self, edition='TODO', entry_count='TODO', lexeme_count='TODO', sense_count='TODO',
+    def print_head(self, dictionary='unknown', edition='TODO', entry_count='TODO', lexeme_count='TODO', sense_count='TODO',
                    year='TODO', month='TODO'):
         self.start_document()
         self.start_node('TEI', {})
         self.start_node('fileDesc', {})
 
         self.start_node('titleStmt', {})
-        self.gen.ignorableWhitespace(self.indent_chars * self.xml_depth)
-        self.gen.startElement('title', {})
-        self.gen.startElement('ref', {'target': 'https://tezaurs.lv'})
-        self.gen.characters('Tēzaurs.lv')
-        self.gen.endElement('ref')
-        self.gen.characters(' - dictionary and thesaurus of Latvian')
-        self.gen.endElement('title')
-        self.gen.ignorableWhitespace(self.newline_chars)
-        self._do_leaf_node('editor', {}, 'Andrejs Spektors et al.')
+        if dictionary == 'tezaurs':
+            self.gen.ignorableWhitespace(self.indent_chars * self.xml_depth)
+            self.gen.startElement('title', {})
+            self.gen.startElement('ref', {'target': 'https://tezaurs.lv'})
+            self.gen.characters('Tēzaurs.lv')
+            self.gen.endElement('ref')
+            self.gen.characters(' - dictionary and thesaurus of Latvian')
+            self.gen.endElement('title')
+        else:
+            self._do_leaf_node('title', {}, 'Dictionary')
+
+        if dictionary == 'tezaurs':
+            self.gen.ignorableWhitespace(self.newline_chars)
+            self._do_leaf_node('editor', {}, 'Andrejs Spektors et al.')
         self.end_node('titleStmt')
 
         self.start_node('editionStmt', {})
@@ -71,21 +76,22 @@ class TEIWriter(XMLWriter):
         self._do_leaf_node('date', {}, f"{year}-{month}")
         self._do_leaf_node('publisher', {},
                            'Institute of Mathematics and Computer Science, University of Latvia')
-        self.start_node('availability', {'status': 'free'})
+        if dictionary == 'tezaurs':
+            self.start_node('availability', {'status': 'free'})
 
-        self.gen.ignorableWhitespace(self.indent_chars * self.xml_depth)
-        self.gen.startElement('p', {})
-        self.gen.characters(f'Copyright 2009-{year}, ')
-        self.gen.startElement('ref', {'target': 'https://ailab.lv'})
-        self.gen.characters('AI Lab')
-        self.gen.endElement('ref')
-        self.gen.characters(' at IMCS, University of Latvia')
-        self.gen.endElement('p')
-        self.gen.ignorableWhitespace(self.newline_chars)
+            self.gen.ignorableWhitespace(self.indent_chars * self.xml_depth)
+            self.gen.startElement('p', {})
+            self.gen.characters(f'Copyright 2009-{year}, ')
+            self.gen.startElement('ref', {'target': 'https://ailab.lv'})
+            self.gen.characters('AI Lab')
+            self.gen.endElement('ref')
+            self.gen.characters(' at IMCS, University of Latvia')
+            self.gen.endElement('p')
+            self.gen.ignorableWhitespace(self.newline_chars)
 
-        self.do_simple_leaf_node('licence', {'target': 'https://creativecommons.org/licenses/by-sa/4.0/'},
-                                 'Creative Commons Attribution-ShareAlike 4.0 International License')
-        self.end_node('availability')
+            self.do_simple_leaf_node('licence', {'target': 'https://creativecommons.org/licenses/by-sa/4.0/'},
+                                     'Creative Commons Attribution-ShareAlike 4.0 International License')
+            self.end_node('availability')
         self.do_simple_leaf_node('ptr', {'target': 'http://hdl.handle.net/TODO'})
         self.end_node('publicationStmt')
 
