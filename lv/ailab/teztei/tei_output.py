@@ -54,12 +54,20 @@ class TEIWriter(XMLWriter):
             self.gen.endElement('ref')
             self.gen.characters(' - dictionary and thesaurus of Latvian')
             self.gen.endElement('title')
+            self.gen.ignorableWhitespace(self.newline_chars)
+        elif dictionary == 'mlvv':
+            self._do_leaf_node('title', {}, 'MLVV - Dictionary of Modern Latvian')
+        elif dictionary == 'llvv':
+            self._do_leaf_node('title', {}, 'LLVV - Dictionary of Standard Latvian (digitalized)')
         else:
             self._do_leaf_node('title', {}, 'Dictionary')
 
         if dictionary == 'tezaurs':
-            self.gen.ignorableWhitespace(self.newline_chars)
             self._do_leaf_node('editor', {}, 'Andrejs Spektors et al.')
+        elif dictionary == 'mlvv':
+            self._do_leaf_node('editor', {}, 'Santa Briede et al.')
+        elif dictionary == 'llvv':
+            self._do_leaf_node('editor', {}, 'Laimdots Ceplītis et al.')
         self.end_node('titleStmt')
 
         self.start_node('editionStmt', {})
@@ -73,19 +81,33 @@ class TEIWriter(XMLWriter):
         self.end_node('extent')
 
         self.start_node('publicationStmt', {})
-        self._do_leaf_node('date', {}, f"{year}-{month}")
-        self._do_leaf_node('publisher', {},
-                           'Institute of Mathematics and Computer Science, University of Latvia')
-        if dictionary == 'tezaurs':
+        self._do_leaf_node('date', {}, f"{year}-{month:02}")
+        if dictionary == 'tezaurs' or dictionary == 'llvv':
+            self._do_leaf_node('publisher', {},
+                               'Institute of Mathematics and Computer Science, University of Latvia')
+        if dictionary == 'mlvv' or dictionary == 'llvv':
+            self._do_leaf_node('publisher', {},
+                               'Latvian Language Institute, University of Latvia')
+
+        if dictionary == 'tezaurs' or dictionary == 'mlvv' or dictionary == 'llvv':
             self.start_node('availability', {'status': 'free'})
 
             self.gen.ignorableWhitespace(self.indent_chars * self.xml_depth)
             self.gen.startElement('p', {})
-            self.gen.characters(f'Copyright 2009-{year}, ')
-            self.gen.startElement('ref', {'target': 'https://ailab.lv'})
-            self.gen.characters('AI Lab')
-            self.gen.endElement('ref')
-            self.gen.characters(' at IMCS, University of Latvia')
+            if dictionary == 'tezaurs' or dictionary == 'mlvv':
+                self.gen.characters(f'Copyright 2009-{year}, ')
+            elif dictionary == 'llvv':
+                self.gen.characters(f'Copyright 2005-{year}, ')
+            if dictionary == 'tezaurs' or dictionary == 'llvv':
+                self.gen.startElement('ref', {'target': 'https://ailab.lv'})
+                self.gen.characters('AI Lab')
+                self.gen.endElement('ref')
+                self.gen.characters(' at IMCS, University of Latvia')
+            elif dictionary == 'mlvv':
+                self.gen.startElement('ref', {'target': 'https://lavi.lu.lv/'})
+                self.gen.characters('LII')
+                self.gen.endElement('ref')
+                self.gen.characters(', University of Latvia')
             self.gen.endElement('p')
             self.gen.ignorableWhitespace(self.newline_chars)
 
@@ -94,6 +116,22 @@ class TEIWriter(XMLWriter):
             self.end_node('availability')
         self.do_simple_leaf_node('ptr', {'target': 'http://hdl.handle.net/TODO'})
         self.end_node('publicationStmt')
+
+        if dictionary == 'llvv':
+            self.start_node('sourceDesc', {})
+            self.start_node('biblStruct', {})
+            self.start_node('monogr', {})
+            self.do_simple_leaf_node('title', {}, 'Latviešu literārās valodas vārdnīca')
+            self.do_simple_leaf_node('editor', {}, 'Laimdots Ceplītis')
+            self.do_simple_leaf_node('title', {}, 'Latviešu literārās valodas vārdnīca')
+            self.start_node('imprint', {})
+            self.do_simple_leaf_node('publisher', {}, 'Izdevniecība "Zinātne"')
+            self.do_simple_leaf_node('pubPlace', {}, 'Rīga')
+            self.do_simple_leaf_node('date', {}, '1972-1996')
+            self.end_node('imprint')
+            self.end_node('monogr')
+            self.end_node('biblStruct')
+            self.end_node('sourceDesc')
 
         self.end_node('fileDesc')
 
