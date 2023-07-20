@@ -1,5 +1,6 @@
 import re
 
+from lv.ailab.dictutils.pron_normalization import prettify_pronunciation, prettify_text_with_pronunciation
 from lv.ailab.tezdb.query_uttils import extract_paradigm_text
 from lv.ailab.xmlutils.writer import XMLWriter
 
@@ -39,8 +40,8 @@ class TEIWriter(XMLWriter):
                 self.gen.characters(part)
                 is_mentioned = True
 
-    def print_head(self, dictionary='unknown', edition='TODO', entry_count='TODO', lexeme_count='TODO', sense_count='TODO',
-                   year='TODO', month='TODO'):
+    def print_head(self, dictionary='unknown', edition='TODO', entry_count='TODO', lexeme_count='TODO',
+                   sense_count='TODO', year='TODO', month='TODO'):
         self.start_document()
         self.start_node('TEI', {})
         self.start_node('fileDesc', {})
@@ -153,7 +154,8 @@ class TEIWriter(XMLWriter):
             else:
                 self.do_simple_leaf_node('bibl', {'id': source['abbr']}, title)
         self.do_simple_leaf_node('bibl', {'id': 'MORPHO', 'url': 'https://github.com/PeterisP/morphology'},
-                                 'Paikens P. Morphological Analyzer and Synthesizer for Latvian. Institute of Mathematics and Computer Science, University of Latvia, 2005-2022.')
+                                 'Paikens P. Morphological Analyzer and Synthesizer for Latvian. ' +
+                                 'Institute of Mathematics and Computer Science, University of Latvia, 2005-2022.')
         self.end_node('listBibl')
         self.end_node('back')
 
@@ -210,7 +212,7 @@ class TEIWriter(XMLWriter):
         self._do_leaf_node('orth', {'type': 'lemma'}, lexeme['lemma'])
         if 'pronun' in lexeme:
             for pronun in lexeme['pronun']:
-                self._do_leaf_node('pron', {}, pronun)
+                self._do_leaf_node('pron', {}, prettify_pronunciation(pronun))
 
         self.print_gram(lexeme)
         self.end_node('form')
@@ -250,14 +252,14 @@ class TEIWriter(XMLWriter):
 
             self._do_leaf_node('iType', {'type': 'computational', 'corresp': '#MORPHO'}, paradigm_text)
         elif 'infl_text' in parent:
-            self._do_leaf_node('iType', {}, parent['infl_text'])
+            self._do_leaf_node('iType', {}, prettify_text_with_pronunciation(parent['infl_text']))
 
         if 'flags' in parent:
             self.print_flags(parent['flags'])
         if 'struct_restr' in parent:
             self.print_struct_restr(parent['struct_restr'])
         if not ('flags' in parent) and not ('struct_restr' in parent) and 'free_text' in parent:
-            self._do_leaf_node('gram', {}, parent['free_text'])
+            self._do_leaf_node('gram', {}, prettify_text_with_pronunciation(parent['free_text']))
 
         self.end_node('gramGrp')
 
