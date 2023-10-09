@@ -69,6 +69,7 @@ def extract_paradigm_stems(element):
             result['stem_past'] = element.stem3
     return result
 
+
 def lmfiy_pos(pos, abbr_type, lemma):
     if not pos:
         return 'u'

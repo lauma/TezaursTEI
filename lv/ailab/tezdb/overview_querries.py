@@ -1,6 +1,6 @@
 from lv.ailab.tezdb.db_config import db_connection_info
 from lv.ailab.tezdb.query_uttils import extract_gram, extract_paradigm_stems
-from lv.ailab.tezdb.single_entry_queries import fetch_lexemes, fetch_senses, fetch_entry_sources
+from lv.ailab.tezdb.single_entry_queries import fetch_lexemes, fetch_senses, fetch_entry_sources, fetch_examples
 
 from psycopg2.extras import NamedTupleCursor
 
@@ -12,8 +12,9 @@ def get_dict_version(connection):
     cursor = connection.cursor(cursor_factory=NamedTupleCursor)
     sql_dict_properties = f"""
     SELECT title, extract(YEAR from release_timestamp) as year, extract(MONTH from release_timestamp) as month,
-        info->'dictionary' #>> '{{}}' as dictionary, info->'tag' #>> '{{}}' as tag, info->'counts'->'entries' #>> '{{}}' as entries,
-        info->'counts'->'lexemes' #>> '{{}}' as lexemes, info->'counts'->'senses' #>> '{{}}' as senses
+        info->'dictionary' #>> '{{}}' as dictionary, info->'tag' #>> '{{}}' as tag,
+        info->'counts'->'entries' #>> '{{}}' as entries, info->'counts'->'lexemes' #>> '{{}}' as lexemes,
+        info->'counts'->'senses' #>> '{{}}' as senses
     FROM {db_connection_info['schema']}.metadata
 """
     cursor.execute(sql_dict_properties)
@@ -39,7 +40,8 @@ def fetch_sources(connection):
             yield {'abbr': row.abbr, 'title': row.title, 'url': row.url}
 
 
-def fetch_entries(connection, omit_mwe=False, omit_wordparts=False, omit_pot_wordparts=False):
+def fetch_entries(connection, omit_mwe=False, omit_wordparts=False, omit_pot_wordparts=False,
+                  do_entrylevel_exmples=False):
     cursor = connection.cursor(cursor_factory=NamedTupleCursor)
     where_clause = ""
     if omit_mwe or omit_wordparts:
@@ -87,6 +89,10 @@ ORDER BY type_id, heading
             senses = fetch_senses(connection, row.id)
             if senses:
                 result['senses'] = senses
+            if do_entrylevel_exmples:
+                examples = fetch_examples(connection, row.id, True)
+                if examples:
+                    result['examples'] = examples
             sources = fetch_entry_sources(connection, row.id)
             if sources:
                 result['sources'] = sources

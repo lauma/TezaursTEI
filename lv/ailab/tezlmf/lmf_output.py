@@ -74,4 +74,11 @@ class LMFWriter(XMLWriter):
             self.do_simple_leaf_node('SynsetRelation',
                                      {'relType': rel['other_name'],
                                       'target': f'{self.wordnet_id}-{self.dict_version}-{rel["other"]}'})
+        for sense in synset_senses:
+            if 'examples' in sense:
+                for example in sense['examples']:
+                    attribs = {}
+                    if 'source' in example:
+                        attribs['source'] = example['source']
+                    self.do_simple_leaf_node('Example', attribs, example['text'])
         self.end_node('Synset')

@@ -194,6 +194,9 @@ class TEIWriter(XMLWriter):
         if 'senses' in entry:
             for sense in entry['senses']:
                 self.print_sense(sense, f'{self.dict_version}/{entry["id"]}')
+        if 'examples' in entry:
+            for example in entry['examples']:
+                self.print_example(example)
         if 'etym' in entry:
             self._do_leaf_node('etym', {}, entry['etym'], True)
         if 'sources' in entry:
@@ -312,10 +315,37 @@ class TEIWriter(XMLWriter):
 
             self.print_synset_related(sense['synset_id'], sense['synset_senses'], sense['synset_rels'],
                                       sense['gradset'])
+        if 'examples' in sense:
+            for example in sense['examples']:
+                self.print_example(example)
+
         if 'subsenses' in sense:
             for subsense in sense['subsenses']:
                 self.print_sense(subsense, sense_id)
+
         self.end_node('sense')
+
+    def print_example(self, example):
+        if 'text' not in example or not example['text']:
+            return
+        self.start_node('cit', {'type': 'example'})
+
+        if 'location' not in example:
+            self._do_leaf_node('quote', {}, example['text'])
+        else:
+            self.gen.ignorableWhitespace(self.indent_chars * self.xml_depth)
+            self.gen.startElement('quote', {})
+            self.gen.characters(example['text'][:example['location']+0])
+            self.gen.startElement('anchor', {})
+            self.gen.endElement('anchor')
+            self.gen.characters(example['text'][example['location']+0:])
+            self.gen.endElement('quote')
+            self.gen.ignorableWhitespace(self.newline_chars)
+
+        if 'source' in example:
+            self._do_leaf_node('bibl', {}, example['source'])
+
+        self.end_node('cit')
 
     def print_entry_sources(self, sources):
         if not sources:

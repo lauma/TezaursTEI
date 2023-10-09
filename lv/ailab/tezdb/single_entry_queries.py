@@ -3,6 +3,7 @@ from psycopg2.extras import NamedTupleCursor
 from lv.ailab.tezdb.db_config import db_connection_info
 from lv.ailab.tezdb.query_uttils import extract_gram
 from lv.ailab.tezdb.single_sinset_queries import fetch_synset_senses, fetch_synset_relations, fetch_gradset
+from lv.ailab.tezdb.subentry_queries import fetch_examples
 
 
 def fetch_lexemes(connection, entry_id, main_lex_id):
@@ -87,6 +88,9 @@ ORDER BY order_no
             sense_dict['gradset'] = fetch_gradset(connection, sense.synset_id)
         if subsenses:
             sense_dict['subsenses'] = subsenses
+        examples = fetch_examples(connection, sense.id)
+        if examples:
+            sense_dict['examples'] = examples
         result.append(sense_dict)
     return result
 
@@ -110,24 +114,4 @@ def fetch_entry_sources(connection, entry_id):
     for source in sources:
         source_dict = {'abbr': source.abbr, 'details': source.details}
         result.append(source_dict)
-    return result
-
-
-def fetch_synseted_senses_by_lexeme(connection, lexeme_id):
-    if not lexeme_id:
-        return
-    cursor = connection.cursor(cursor_factory=NamedTupleCursor)
-    sql_senses = f"""
-SELECT s.id as sense_id, s.synset_id
-FROM {db_connection_info['schema']}.senses s
-JOIN {db_connection_info['schema']}.lexemes l on s.entry_id = l.entry_id
-WHERE l.id = {lexeme_id} AND s.synset_id<>0 AND NOT s.hidden
-"""
-    cursor.execute(sql_senses)
-    senses = cursor.fetchall()
-    if not senses:
-        return
-    result = []
-    for s in senses:
-        result.append({'sense_id': s.sense_id, 'synset_id': s.synset_id})
     return result

@@ -5,9 +5,9 @@ from lv.ailab.tezdb.db_config import db_connection_info
 import sys
 
 from lv.ailab.tezdb.overview_querries import fetch_synsets, fetch_synseted_lexemes, get_dict_version
-from lv.ailab.tezdb.single_entry_queries import fetch_synseted_senses_by_lexeme
 from lv.ailab.tezdb.single_sinset_queries import fetch_synset_senses, fetch_synset_lexemes, fetch_synset_relations, \
     fetch_omw_eq_relations
+from lv.ailab.tezdb.subentry_queries import fetch_synseted_senses_by_lexeme
 from lv.ailab.tezlmf.ili import IliMapping
 from lv.ailab.tezlmf.lmf_output import LMFWriter
 

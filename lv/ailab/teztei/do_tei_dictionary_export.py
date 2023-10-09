@@ -24,6 +24,7 @@ omit_mwe = False
 
 do_free_texts = False
 do_inflection_texts = False
+do_entrylevel_exmples = False
 
 
 if len(sys.argv) > 1:
@@ -53,7 +54,7 @@ with open(filename, 'w', encoding='utf8') as f:
         dict_version_data['title'], dict_version_data['entries'], dict_version_data['lexemes'],
         dict_version_data['senses'], dict_version_data['year'], dict_version_data['month'])
     try:
-        for entry in fetch_entries(connection, omit_mwe, omit_wordparts, omit_pot_wordparts):
+        for entry in fetch_entries(connection, omit_mwe, omit_wordparts, omit_pot_wordparts, do_entrylevel_exmples):
             tei_printer.print_entry(entry)
     except BaseException as err:
         print("Entry was: " + tei_printer.debug_entry_id)

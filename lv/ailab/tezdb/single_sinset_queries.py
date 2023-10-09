@@ -1,6 +1,7 @@
 from psycopg2.extras import NamedTupleCursor
 
 from lv.ailab.tezdb.db_config import db_connection_info
+from lv.ailab.tezdb.subentry_queries import fetch_examples
 
 
 def fetch_synset_senses(connection, synset_id):
@@ -21,8 +22,12 @@ ORDER BY e.type_id, entry_hk
         return
     result = []
     for member in synset_members:
-        result.append({'softid': f'{member.entry_hk}/{member.sense_no}',
-                       'hardid': member.sense_id, 'gloss': member.gloss})
+        sense_dict = {'softid': f'{member.entry_hk}/{member.sense_no}',
+                       'hardid': member.sense_id, 'gloss': member.gloss}
+        examples = fetch_examples(connection, member.sense_id)
+        if examples:
+            sense_dict['examples'] = examples
+        result.append(sense_dict)
     return result
 
 
