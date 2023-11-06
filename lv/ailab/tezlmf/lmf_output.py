@@ -1,3 +1,4 @@
+from lv.ailab.dictutils.gloss_normalization import full_cleanup
 from lv.ailab.tezdb.query_uttils import lmfiy_pos, extract_paradigm_text
 from lv.ailab.xmlutils.writer import XMLWriter
 
@@ -67,7 +68,7 @@ class LMFWriter(XMLWriter):
         unique_gloss = {}
         for sense in synset_senses:
             if 'gloss' in sense:
-                unique_gloss[sense['gloss']] = 1
+                unique_gloss[full_cleanup(sense['gloss'])] = 1
         for gloss in unique_gloss:
             self.do_simple_leaf_node('Definition', {}, gloss)
         for rel in relations:

@@ -1,5 +1,6 @@
 import re
 
+from lv.ailab.dictutils.gloss_normalization import mandatory_normalization, full_cleanup
 from lv.ailab.dictutils.pron_normalization import prettify_pronunciation, prettify_text_with_pronunciation
 from lv.ailab.tezdb.query_uttils import extract_paradigm_text
 from lv.ailab.xmlutils.writer import XMLWriter
@@ -25,19 +26,23 @@ class TEIWriter(XMLWriter):
         self.gen.ignorableWhitespace(self.newline_chars)
 
     def _do_content_with_mentions(self, content):
-        parts = re.split('</?(?:em|i)>', content)
+        #parts = re.split('</?(?:em|i)>', content)
+        parts = re.split(r'(?<!\\)_+', content)
         is_mentioned = False
-        if re.match('^</?(?:em|i)>', content):
+        #if re.match('^</?(?:em|i)>', content):
+        if re.match(r'^_+', content):
             parts.pop(0)
             is_mentioned = True
         for part in parts:
             if is_mentioned:
                 self.gen.startElement('mentioned', {})
-                self.gen.characters(part)
+                #TODO: enkursaites
+                self.gen.characters(full_cleanup(part))
                 self.gen.endElement('mentioned')
                 is_mentioned = False
             else:
-                self.gen.characters(part)
+                #TODO: enkursaites
+                self.gen.characters(full_cleanup(part))
                 is_mentioned = True
 
     def print_head(self, dictionary='unknown', edition='TODO', entry_count='TODO', lexeme_count='TODO',
@@ -198,7 +203,7 @@ class TEIWriter(XMLWriter):
             for example in entry['examples']:
                 self.print_example(example)
         if 'etym' in entry:
-            self._do_leaf_node('etym', {}, entry['etym'], True)
+            self._do_leaf_node('etym', {}, mandatory_normalization(entry['etym']), True)
         if 'sources' in entry:
             self.print_entry_sources(entry['sources'])
         self.end_node('entry')
@@ -310,7 +315,8 @@ class TEIWriter(XMLWriter):
         sense_ord = f'{sense["ord"]}'
         self.start_node('sense', {'id': sense_id, 'n': sense_ord})
         self.print_gram(sense)
-        self._do_leaf_node('def', {}, sense['gloss'], True)
+        norm_gloss = mandatory_normalization(sense['gloss'])
+        self._do_leaf_node('def', {}, norm_gloss, True)
         if 'synset_id' in sense:  # and 'synset_senses' in sense:
 
             self.print_synset_related(sense['synset_id'], sense['synset_senses'], sense['synset_rels'],
