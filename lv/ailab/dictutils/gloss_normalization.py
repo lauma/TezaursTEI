@@ -21,6 +21,7 @@ superscript = {
     'k': "\u1D4F",
     'n': "\u207F",
     'x': "\u20E3",
+    'g': "\u1D4D",
 }
 subscript = {
     '0': "\u2080",
@@ -60,11 +61,12 @@ subscript = {
 
 
 def _convert_to_sup(text, debug_text):
-    warns = regex.findall('[^' + regex.escape(''.join(superscript.keys())) + ']', text)
+    result = regex.sub(r'^[o0O]^(\s?[CF])', "\u00B0\\1", text) #grādu normalizācija
+    warns = regex.findall('[^' + regex.escape(''.join(superscript.keys())) + ']', result)
     if warns:
-        print(', '.join(warns) + " was not transformed to superscript in string \"" + text
+        print(', '.join(warns) + " was not transformed to superscript in string \"" + result
               + "\" for full text \"" + debug_text + "\"!")
-    result = text.translate(str.maketrans(superscript))
+    result = result.translate(str.maketrans(superscript))
     return result
 
 
@@ -115,11 +117,13 @@ def mandatory_normalization(gloss):
 
 def _symbol_normalization(gloss):
     result = gloss
+    result = regex.sub('-->', '→', result)
+    #result = regex.sub('->', '→', result)
     result = regex.sub('--', '–', result)
     result = regex.sub('---', '—', result)
     result = regex.sub('\\.\\.\\.', '…', result)
     result = regex.sub('\\.\\.', '‥', result)
-    result = regex.sub('-->', '→', result)
+
     return result
 
 

@@ -53,14 +53,7 @@ class TEIWriter(XMLWriter):
 
         self.start_node('titleStmt', {})
         if dictionary == 'tezaurs':
-            self.gen.ignorableWhitespace(self.indent_chars * self.xml_depth)
-            self.gen.startElement('title', {})
-            self.gen.startElement('ref', {'target': 'https://tezaurs.lv'})
-            self.gen.characters('Tēzaurs.lv')
-            self.gen.endElement('ref')
-            self.gen.characters(' - dictionary and thesaurus of Latvian')
-            self.gen.endElement('title')
-            self.gen.ignorableWhitespace(self.newline_chars)
+            self._do_leaf_node('title', {}, 'Tēzaurs.lv - Dictionary and Thesaurus of Latvian')
         elif dictionary == 'mlvv':
             self._do_leaf_node('title', {}, 'MLVV - Dictionary of Modern Latvian')
         elif dictionary == 'llvv':
@@ -89,38 +82,44 @@ class TEIWriter(XMLWriter):
         self.start_node('publicationStmt', {})
         self._do_leaf_node('date', {}, f"{year}-{month:02}")
         if dictionary == 'tezaurs' or dictionary == 'llvv':
-            self._do_leaf_node('publisher', {},
-                               'Institute of Mathematics and Computer Science, University of Latvia')
+            self.gen.ignorableWhitespace(self.indent_chars * self.xml_depth)
+            self.gen.startElement('publisher', {})
+            self.gen.startElement('ref', {'target': 'https://ailab.lv'})
+            self.gen.characters('AI Lab')
+            self.gen.endElement('ref')
+            self.gen.characters(' at Institute of Mathematics and Computer Science, University of Latvia')
+            self.gen.endElement('publisher')
+            self.gen.ignorableWhitespace(self.newline_chars)
+
         if dictionary == 'mlvv' or dictionary == 'llvv':
-            self._do_leaf_node('publisher', {},
-                               'Latvian Language Institute, University of Latvia')
+            self.gen.ignorableWhitespace(self.indent_chars * self.xml_depth)
+            self.gen.startElement('publisher', {})
+            self.gen.startElement('ref', {'target': 'https://lavi.lu.lv/'})
+            self.gen.characters('LII')
+            self.gen.endElement('ref')
+            self.gen.characters(' at University of Latvia')
+            self.gen.endElement('publisher')
+            self.gen.ignorableWhitespace(self.newline_chars)
 
         if dictionary == 'tezaurs' or dictionary == 'mlvv' or dictionary == 'llvv':
             self.start_node('availability', {'status': 'free'})
 
-            self.gen.ignorableWhitespace(self.indent_chars * self.xml_depth)
-            self.gen.startElement('p', {})
-            if dictionary == 'tezaurs' or dictionary == 'mlvv':
-                self.gen.characters(f'Copyright 2009-{year}, ')
-            elif dictionary == 'llvv':
-                self.gen.characters(f'Copyright 2005-{year}, ')
-            if dictionary == 'tezaurs' or dictionary == 'llvv':
-                self.gen.startElement('ref', {'target': 'https://ailab.lv'})
-                self.gen.characters('AI Lab')
-                self.gen.endElement('ref')
-                self.gen.characters(' at IMCS, University of Latvia')
+            if dictionary == 'tezaurs':
+                self.do_simple_leaf_node('p', {}, f'Copyright 2009-{year}, AI Lab at IMCS, University of Latvia')
             elif dictionary == 'mlvv':
-                self.gen.startElement('ref', {'target': 'https://lavi.lu.lv/'})
-                self.gen.characters('LII')
-                self.gen.endElement('ref')
-                self.gen.characters(', University of Latvia')
-            self.gen.endElement('p')
-            self.gen.ignorableWhitespace(self.newline_chars)
+                self.do_simple_leaf_node('p', {}, f'Copyright 2009-{year}, LII at University of Latvia')
+            elif dictionary == 'llvv':
+                self.do_simple_leaf_node('p', {}, f'Copyright 2005-{year}, AI Lab at IMCS, University of Latvia')
 
             self.do_simple_leaf_node('licence', {'target': 'https://creativecommons.org/licenses/by-sa/4.0/'},
                                      'Creative Commons Attribution-ShareAlike 4.0 International License')
             self.end_node('availability')
-        self.do_simple_leaf_node('ptr', {'target': 'http://hdl.handle.net/TODO'})
+        if dictionary == 'tezaurs':
+            self.do_simple_leaf_node('ptr', {'target': 'https://tezaurs.lv'})
+        elif dictionary == 'mlvv':
+            self.do_simple_leaf_node('ptr', {'target': 'https://mlvv.tezaurs.lv'})
+        elif dictionary == 'llvv':
+            self.do_simple_leaf_node('ptr', {'target': 'https://llvv.tezaurs.lv'})
         self.end_node('publicationStmt')
 
         if dictionary == 'llvv':
