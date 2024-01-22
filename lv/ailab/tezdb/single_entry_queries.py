@@ -3,7 +3,7 @@ from psycopg2.extras import NamedTupleCursor
 from lv.ailab.tezdb.db_config import db_connection_info
 from lv.ailab.tezdb.query_uttils import extract_gram
 from lv.ailab.tezdb.single_sinset_queries import fetch_synset_senses, fetch_synset_relations, fetch_gradset
-from lv.ailab.tezdb.subentry_queries import fetch_examples
+from lv.ailab.tezdb.subentry_queries import fetch_examples, fetch_gloss_entry_links, fetch_gloss_sense_links
 
 
 def fetch_lexemes(connection, entry_id, main_lex_id):
@@ -91,6 +91,12 @@ ORDER BY order_no
         examples = fetch_examples(connection, sense.id)
         if examples:
             sense_dict['examples'] = examples
+        gloss_entry_links = fetch_gloss_entry_links(connection, sense.id)
+        if gloss_entry_links:
+            sense_dict['ge_links'] = gloss_entry_links
+        gloss_sense_links = fetch_gloss_sense_links(connection, sense.id)
+        if gloss_sense_links:
+            sense_dict['gs_links'] = gloss_sense_links
         result.append(sense_dict)
     return result
 

@@ -1,4 +1,4 @@
-import re
+import regex
 
 from lv.ailab.dictutils.gloss_normalization import mandatory_normalization, full_cleanup
 from lv.ailab.dictutils.pron_normalization import prettify_pronunciation, prettify_text_with_pronunciation
@@ -26,11 +26,14 @@ class TEIWriter(XMLWriter):
         self.gen.ignorableWhitespace(self.newline_chars)
 
     def _do_content_with_mentions(self, content):
-        #parts = re.split('</?(?:em|i)>', content)
-        parts = re.split(r'(?<!\\)_+', content)
+        #parts = regex.split('</?(?:em|i)>', content)
+        underscore_count = len(regex.findall(r'(?<!\\)_', content))
+        if (underscore_count % 2 > 0):
+            print(f'Odd number of _ in entry {self.debug_entry_id}, string {content}!\n')
+        parts = regex.split(r'(?<!\\)_+', content)
         is_mentioned = False
-        #if re.match('^</?(?:em|i)>', content):
-        if re.match(r'^_+', content):
+        #if regex.match('^</?(?:em|i)>', content):
+        if regex.match(r'^_+', content):
             parts.pop(0)
             is_mentioned = True
         for part in parts:
@@ -152,7 +155,7 @@ class TEIWriter(XMLWriter):
         self.start_node('listBibl', {})
         for source in sources:
             # FIXME būtu labi, ja te varētu gudrāk dalīt elementos.
-            title = re.sub('</?(?:em|i)>', '', source['title'])
+            title = regex.sub('</?(?:em|i)>', '', source['title'])
             if 'url' in source and source['url']:
                 self.do_simple_leaf_node('bibl', {'id': source['abbr'], 'url': source['url']}, title)
             else:
