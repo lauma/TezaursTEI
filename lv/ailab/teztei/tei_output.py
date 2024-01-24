@@ -15,17 +15,17 @@ class TEIWriter(XMLWriter):
         self.debug_entry_id = ''
         self.dict_version = dict_version
 
-    def _do_leaf_node(self, name, attrs, content, mentions=False):
+    def _do_leaf_node(self, name, attrs, content, mentions=False, ge_links=None, gs_links=None):
         self.gen.ignorableWhitespace(self.indent_chars * self.xml_depth)
         self.gen.startElement(name, attrs)
         if mentions:
-            self._do_content_with_mentions(content)
+            self._do_content_with_mentions_glosslinks(content, ge_links, gs_links)
         else:
             self.gen.characters(content)
         self.gen.endElement(name)
         self.gen.ignorableWhitespace(self.newline_chars)
 
-    def _do_content_with_mentions(self, content):
+    def _do_content_with_mentions_glosslinks(self, content, ge_links=None, gs_links=None):
         #parts = regex.split('</?(?:em|i)>', content)
         underscore_count = len(regex.findall(r'(?<!\\)_', content))
         if (underscore_count % 2 > 0):
@@ -39,14 +39,44 @@ class TEIWriter(XMLWriter):
         for part in parts:
             if is_mentioned:
                 self.gen.startElement('mentioned', {})
-                #TODO: enkursaites
-                self.gen.characters(full_cleanup(part))
+                self._do_content_with_gloslinks(part, ge_links, gs_links)
                 self.gen.endElement('mentioned')
                 is_mentioned = False
             else:
-                #TODO: enkursaites
-                self.gen.characters(full_cleanup(part))
+                self._do_content_with_gloslinks(part, ge_links, gs_links)
                 is_mentioned = True
+
+    def _do_content_with_gloslinks(self, content, ge_links=None, gs_links=None):
+        if (not ge_links and not gs_links):
+            self.gen.characters(full_cleanup(content))
+        else:
+            content_left = content
+            match = regex.match(r'^(.*?)[((?:\p{L}\p{M}*)+)]{([sen]):(\d+)}(.*)', content_left)
+            while match:
+                self.gen.characters(match.group(1))
+                word = match.group(2)
+                link_type = match.group(3)
+                link_id = match.group(4)
+                link_ref = None
+                if (link_type == 'e'):
+                    if not ge_links[link_id]:
+                        print (f'Invalid gloss link [{link_type}]{{link_id}} in entry {self.debug_entry_id}\n')
+                    link_ref = ge_links[link_id]
+                elif (link_type == 's'):
+                    if not gs_links[link_id]:
+                        print (f'Invalid gloss link [{link_type}]{{link_id}} in entry {self.debug_entry_id}\n')
+                    link_ref = gs_links[link_id]
+                else:
+                    print (f'Empty gloss link [{link_type}]{{link_id}} in entry {self.debug_entry_id}\n')
+                if link_ref:
+                    self.gen.startElement('ref', {'target' : f'{self.dict_version}/{link_ref}', 'type':'disambiguation'})
+                    self.gen.characters(word)
+                    self.gen.endElement('ref')
+                else:
+                    self.gen.characters(word)
+                part_left = match.group(5)
+                match = regex.match(r'^(.*?)[((?:\p{L}\p{M}*)+)]{([sen]):(\d+)}(.*)', content_left)
+            self.gen.characters(content_left)
 
     def print_head(self, dictionary='unknown', edition='TODO', entry_count='TODO', lexeme_count='TODO',
                    sense_count='TODO', year='TODO', month='TODO'):
@@ -318,7 +348,7 @@ class TEIWriter(XMLWriter):
         self.start_node('sense', {'id': sense_id, 'n': sense_ord})
         self.print_gram(sense)
         norm_gloss = mandatory_normalization(sense['gloss'])
-        self._do_leaf_node('def', {}, norm_gloss, True)
+        self._do_leaf_node('def', {}, norm_gloss, True, sense.get('ge_links'), sense.get('gs_links')) # Jo var būt None
         if 'synset_id' in sense:  # and 'synset_senses' in sense:
 
             self.print_synset_related(sense['synset_id'], sense['synset_senses'], sense['synset_rels'],

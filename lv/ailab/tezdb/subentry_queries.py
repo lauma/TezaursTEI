@@ -46,7 +46,7 @@ WHERE rt.name = 'hasGlossLink' and NOT e.hidden
         return
     result = {}
     for gloss_link in gloss_links:
-        result[gloss_link.id] = gloss_link.entry_human_key
+        result[gloss_link.id] = gloss_link.human_key
     return result
 
 def fetch_gloss_sense_links(connection, sense_id):
@@ -54,7 +54,7 @@ def fetch_gloss_sense_links(connection, sense_id):
         return
     cursor = connection.cursor(cursor_factory=NamedTupleCursor)
     sql_links = f"""
-SELECT r.id, s.order_no as sense_order, ps.order_no as parent_oder, e.human_key as entry_human_key
+SELECT r.id, s.order_no as sense_order, ps.order_no as parent_order, e.human_key
 FROM {db_connection_info['schema']}.sense_relations r
 JOIN {db_connection_info['schema']}.sense_rel_types rt on r.type_id = rt.id
 JOIN {db_connection_info['schema']}.senses s on r.sense_2_id = s.id
@@ -68,10 +68,10 @@ WHERE rt.name = 'hasGlossLink' and NOT e.hidden and NOT s.hidden and (ps.hidden 
         return
     result = {}
     for gloss_link in gloss_links:
-        endpoint = gloss_link.entry_human_key
+        endpoint = gloss_link.human_key
         if gloss_link.parent_order and gloss_link.parent_order is not None:
-            endpoint = endpoint + '/' + gloss_link.parent_order
-        endpoint =endpoint + '/' + gloss_link.sense_order
+            endpoint = endpoint + '/' + str(gloss_link.parent_order)
+        endpoint = endpoint + '/' + str(gloss_link.sense_order)
         result[gloss_link.id] = endpoint
     return result
 
