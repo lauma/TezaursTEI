@@ -1,4 +1,4 @@
-import re
+import regex
 
 
 class IliMapping:
@@ -10,7 +10,7 @@ class IliMapping:
         with open(self.mapping_file, 'r', encoding='utf8') as f:
             print(f'Loading ili mapping from {self.mapping_file}')
             for line in f:
-                parts = re.split('\t', line)
+                parts = regex.split('\t', line)
                 if len(parts) == 2:
                     self.mapping[parts[1].strip()] = parts[0].strip()
                 elif line:

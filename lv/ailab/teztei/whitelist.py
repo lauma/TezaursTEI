@@ -1,4 +1,4 @@
-import re
+import regex
 
 
 class EntryDesc:
@@ -26,7 +26,7 @@ class EntryWhitelist:
         with open(file_name, 'r', encoding='utf8') as f:
             for line in f:
                 line = line.strip()
-                parts = re.split('\\s*\t\\s*', line)
+                parts = regex.split('\\s*\t\\s*', line)
                 if len(parts) == 2:
                     self.entries.append(EntryDesc(parts[0], int(parts[1])))
                 elif len(parts) == 1 and parts[0]:
