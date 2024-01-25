@@ -32,8 +32,8 @@ class TEIWriter(XMLWriter):
             print(f'Odd number of _ in entry {self.debug_entry_id}, string {content}!\n')
         parts = regex.split(r'(?<!\\)_+', content)
         is_mentioned = False
-        #if regex.match('^</?(?:em|i)>', content):
-        if regex.match(r'^_+', content):
+        #if regex.search('^</?(?:em|i)>', content):
+        if regex.search(r'^_+', content):
             parts.pop(0)
             is_mentioned = True
         for part in parts:
@@ -47,35 +47,42 @@ class TEIWriter(XMLWriter):
                 is_mentioned = True
 
     def _do_content_with_gloslinks(self, content, ge_links=None, gs_links=None):
+        if regex.search('tieksme uz agresiju', content):
+            print(f" Content = {content}, ge = {ge_links}, gs = {gs_links}")
         if (not ge_links and not gs_links):
             self.gen.characters(full_cleanup(content))
         else:
             content_left = content
-            match = regex.match(r'^(.*?)[((?:\p{L}\p{M}*)+)]{([sen]):(\d+)}(.*)', content_left)
+            glosslink_regex = r'(.*?)\[((?:\p{L}\p{M}*)+)\]\{([sen]):(\d+)\}(.*)'
+            match = regex.fullmatch(glosslink_regex, content_left)
             while match:
                 self.gen.characters(match.group(1))
                 word = match.group(2)
+                content_left = match.group(5)
                 link_type = match.group(3)
-                link_id = match.group(4)
+                link_id = int(match.group(4))
                 link_ref = None
-                if (link_type == 'e'):
-                    if not ge_links[link_id]:
-                        print (f'Invalid gloss link [{link_type}]{{link_id}} in entry {self.debug_entry_id}\n')
+                if link_type == 'e':
+                    if not ge_links.get(link_id):
+                        print(
+                            f'Invalid gloss link {link_type}:{link_id} in entry {self.debug_entry_id}'
+                            + f' (available links {ge_links}).\n')
                     link_ref = ge_links[link_id]
-                elif (link_type == 's'):
-                    if not gs_links[link_id]:
-                        print (f'Invalid gloss link [{link_type}]{{link_id}} in entry {self.debug_entry_id}\n')
+                elif link_type == 's':
+                    if not gs_links.get(link_id):
+                        print(
+                            f'Invalid gloss link {link_type}:{link_id} in entry {self.debug_entry_id}'
+                            + f' (available links {gs_links}).\n')
                     link_ref = gs_links[link_id]
                 else:
-                    print (f'Empty gloss link [{link_type}]{{link_id}} in entry {self.debug_entry_id}\n')
+                    print (f'Empty gloss link {link_type}:{link_id} in entry {self.debug_entry_id}\n')
                 if link_ref:
                     self.gen.startElement('ref', {'target' : f'{self.dict_version}/{link_ref}', 'type':'disambiguation'})
                     self.gen.characters(word)
                     self.gen.endElement('ref')
                 else:
                     self.gen.characters(word)
-                part_left = match.group(5)
-                match = regex.match(r'^(.*?)\[((?:\p{L}\p{M}*)+)\]{([sen]):(\d+)}(.*)', content_left)
+                match = regex.fullmatch(glosslink_regex, content_left)
             self.gen.characters(content_left)
 
     def print_head(self, dictionary='unknown', edition='TODO', entry_count='TODO', lexeme_count='TODO',

@@ -29,16 +29,17 @@ ORDER BY hidden DESC, order_no
         result.append(sample_dict)
     return result
 
+
 def fetch_gloss_entry_links(connection, sense_id):
     if not sense_id:
         return
     cursor = connection.cursor(cursor_factory=NamedTupleCursor)
     sql_links = f"""
 SELECT r.id, e.human_key
-FROM dict.sense_entry_relations r
-JOIN dict.sense_entry_rel_types rt on r.type_id = rt.id
-JOIN dict.entries e on r.entry_id = e.id
-WHERE rt.name = 'hasGlossLink' and NOT e.hidden
+FROM {db_connection_info['schema']}.sense_entry_relations r
+JOIN {db_connection_info['schema']}.sense_entry_rel_types rt on r.type_id = rt.id
+JOIN {db_connection_info['schema']}.entries e on r.entry_id = e.id
+WHERE rt.name = 'hasGlossLink' and NOT e.hidden r.sense_id={sense_id}
 """
     cursor.execute(sql_links)
     gloss_links = cursor.fetchall()
@@ -48,6 +49,7 @@ WHERE rt.name = 'hasGlossLink' and NOT e.hidden
     for gloss_link in gloss_links:
         result[gloss_link.id] = gloss_link.human_key
     return result
+
 
 def fetch_gloss_sense_links(connection, sense_id):
     if not sense_id:
@@ -61,6 +63,7 @@ JOIN {db_connection_info['schema']}.senses s on r.sense_2_id = s.id
 LEFT JOIN {db_connection_info['schema']}.senses ps on s.parent_sense_id = ps.id
 JOIN {db_connection_info['schema']}.entries e on s.entry_id = e.id
 WHERE rt.name = 'hasGlossLink' and NOT e.hidden and NOT s.hidden and (ps.hidden is NULL or NOT ps.hidden)
+      and r.sense_1_id={sense_id}
 """
     cursor.execute(sql_links)
     gloss_links = cursor.fetchall()
@@ -74,6 +77,7 @@ WHERE rt.name = 'hasGlossLink' and NOT e.hidden and NOT s.hidden and (ps.hidden 
         endpoint = endpoint + '/' + str(gloss_link.sense_order)
         result[gloss_link.id] = endpoint
     return result
+
 
 def fetch_synseted_senses_by_lexeme(connection, lexeme_id):
     if not lexeme_id:

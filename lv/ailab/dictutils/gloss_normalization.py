@@ -97,7 +97,7 @@ def full_cleanup(gloss):
 
 
 def _remove_anchor_links(gloss):
-    result = regex.sub(r'\[((?:\p{L}\p{M}*)+)\]{[sen]:\d+}', r'\1', gloss)
+    result = regex.sub(r'\[((?:\p{L}\p{M}*)+)\]\{[sen]:\d+\}', r'\1', gloss)
     return result
 
 
