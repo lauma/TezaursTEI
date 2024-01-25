@@ -75,7 +75,7 @@ class TEIWriter(XMLWriter):
                 else:
                     self.gen.characters(word)
                 part_left = match.group(5)
-                match = regex.match(r'^(.*?)[((?:\p{L}\p{M}*)+)]{([sen]):(\d+)}(.*)', content_left)
+                match = regex.match(r'^(.*?)\[((?:\p{L}\p{M}*)+)\]{([sen]):(\d+)}(.*)', content_left)
             self.gen.characters(content_left)
 
     def print_head(self, dictionary='unknown', edition='TODO', entry_count='TODO', lexeme_count='TODO',

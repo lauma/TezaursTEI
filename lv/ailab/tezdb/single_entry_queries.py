@@ -1,3 +1,4 @@
+import regex
 from psycopg2.extras import NamedTupleCursor
 
 from lv.ailab.tezdb.db_config import db_connection_info
@@ -91,12 +92,14 @@ ORDER BY order_no
         examples = fetch_examples(connection, sense.id)
         if examples:
             sense_dict['examples'] = examples
-        gloss_entry_links = fetch_gloss_entry_links(connection, sense.id)
-        if gloss_entry_links:
-            sense_dict['ge_links'] = gloss_entry_links
-        gloss_sense_links = fetch_gloss_sense_links(connection, sense.id)
-        if gloss_sense_links:
-            sense_dict['gs_links'] = gloss_sense_links
+        if regex.match(r'\[((?:\p{L}\p{M}*)+)\]\{e:\d+}', sense.gloss):
+            gloss_entry_links = fetch_gloss_entry_links(connection, sense.id)
+            if gloss_entry_links:
+                sense_dict['ge_links'] = gloss_entry_links
+        if regex.match(r'\[((?:\p{L}\p{M}*)+)\]\{s:\d+}', sense.gloss):
+            gloss_sense_links = fetch_gloss_sense_links(connection, sense.id)
+            if gloss_sense_links:
+                sense_dict['gs_links'] = gloss_sense_links
         result.append(sense_dict)
     return result
 
