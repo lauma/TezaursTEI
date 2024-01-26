@@ -105,3 +105,4 @@ ENV/
 
 .DS_Store
 /lv/ailab/tezdb/db_config.py
+*-ignore.bat
