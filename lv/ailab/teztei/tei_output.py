@@ -26,13 +26,13 @@ class TEIWriter(XMLWriter):
         self.gen.ignorableWhitespace(self.newline_chars)
 
     def _do_content_with_mentions_glosslinks(self, content, ge_links=None, gs_links=None):
-        #parts = regex.split('</?(?:em|i)>', content)
+        # parts = regex.split('</?(?:em|i)>', content)
         underscore_count = len(regex.findall(r'(?<!\\)_', content))
-        if (underscore_count % 2 > 0):
+        if underscore_count % 2 > 0:
             print(f'Odd number of _ in entry {self.debug_entry_id}, string {content}!\n')
         parts = regex.split(r'(?<!\\)_+', content)
         is_mentioned = False
-        #if regex.search('^</?(?:em|i)>', content):
+        # if regex.search('^</?(?:em|i)>', content):
         if regex.search(r'^_+', content):
             parts.pop(0)
             is_mentioned = True
@@ -47,9 +47,7 @@ class TEIWriter(XMLWriter):
                 is_mentioned = True
 
     def _do_content_with_gloslinks(self, content, ge_links=None, gs_links=None):
-        if regex.search('tieksme uz agresiju', content):
-            print(f" Content = {content}, ge = {ge_links}, gs = {gs_links}")
-        if (not ge_links and not gs_links):
+        if not ge_links and not gs_links:
             self.gen.characters(full_cleanup(content))
         else:
             content_left = content
@@ -75,9 +73,10 @@ class TEIWriter(XMLWriter):
                             + f' (available links {gs_links}).\n')
                     link_ref = gs_links[link_id]
                 else:
-                    print (f'Empty gloss link {link_type}:{link_id} in entry {self.debug_entry_id}\n')
+                    print(f'Empty gloss link {link_type}:{link_id} in entry {self.debug_entry_id}\n')
                 if link_ref:
-                    self.gen.startElement('ref', {'target' : f'{self.dict_version}/{link_ref}', 'type':'disambiguation'})
+                    self.gen.startElement('ref',
+                                          {'target': f'{self.dict_version}/{link_ref}', 'type': 'disambiguation'})
                     self.gen.characters(word)
                     self.gen.endElement('ref')
                 else:
@@ -355,7 +354,7 @@ class TEIWriter(XMLWriter):
         self.start_node('sense', {'id': sense_id, 'n': sense_ord})
         self.print_gram(sense)
         norm_gloss = mandatory_normalization(sense['gloss'])
-        self._do_leaf_node('def', {}, norm_gloss, True, sense.get('ge_links'), sense.get('gs_links')) # Jo var būt None
+        self._do_leaf_node('def', {}, norm_gloss, True, sense.get('ge_links'), sense.get('gs_links'))  # Jo var būt None
         if 'synset_id' in sense:  # and 'synset_senses' in sense:
 
             self.print_synset_related(sense['synset_id'], sense['synset_senses'], sense['synset_rels'],

@@ -39,7 +39,7 @@ SELECT r.id, e.human_key
 FROM {db_connection_info['schema']}.sense_entry_relations r
 JOIN {db_connection_info['schema']}.sense_entry_rel_types rt on r.type_id = rt.id
 JOIN {db_connection_info['schema']}.entries e on r.entry_id = e.id
-WHERE rt.name = 'hasGlossLink' and NOT e.hidden r.sense_id={sense_id}
+WHERE rt.name = 'hasGlossLink' and NOT e.hidden and r.sense_id={sense_id}
 """
     cursor.execute(sql_links)
     gloss_links = cursor.fetchall()
