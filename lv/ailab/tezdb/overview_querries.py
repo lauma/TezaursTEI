@@ -13,15 +13,19 @@ def get_dict_version(connection):
     sql_dict_properties = f"""
     SELECT title, extract(YEAR from release_timestamp) as year, extract(MONTH from release_timestamp) as month,
         info->'dictionary' #>> '{{}}' as dictionary, info->'tag' #>> '{{}}' as tag,
-        info->'counts'->'entries' #>> '{{}}' as entries, info->'counts'->'lexemes' #>> '{{}}' as lexemes,
-        info->'counts'->'senses' #>> '{{}}' as senses
+        info->'counts'->'entries' #>> '{{}}' as entries,
+        info->'counts'->'lexemes' #>> '{{}}' as lexemes,
+        info->'counts'->'senses' #>> '{{}}' as senses,
+        info->'release_name_en' #>> '{{}}' as release_name_en,
+        info->'canonical_url' #>> '{{}}' as url
     FROM {db_connection_info['schema']}.metadata
 """
     cursor.execute(sql_dict_properties)
     row = cursor.fetchone()
     return {
         'tag': row.tag, 'title': row.title, 'entries': row.entries, 'lexemes': row.lexemes,
-        'senses': row.senses, 'year': row.year, 'month': row.month, 'dictionary': row.dictionary}
+        'senses': row.senses, 'year': row.year, 'month': row.month, 'dictionary': row.dictionary,
+        'release_name_en': row.release_name_en, 'url': row.url}
 
 
 def fetch_sources(connection):

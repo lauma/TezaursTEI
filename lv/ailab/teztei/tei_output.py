@@ -39,14 +39,14 @@ class TEIWriter(XMLWriter):
         for part in parts:
             if is_mentioned:
                 self.gen.startElement('mentioned', {})
-                self._do_content_with_gloslinks(part, ge_links, gs_links)
+                self._do_content_with_glosslinks(part, ge_links, gs_links)
                 self.gen.endElement('mentioned')
                 is_mentioned = False
             else:
-                self._do_content_with_gloslinks(part, ge_links, gs_links)
+                self._do_content_with_glosslinks(part, ge_links, gs_links)
                 is_mentioned = True
 
-    def _do_content_with_gloslinks(self, content, ge_links=None, gs_links=None):
+    def _do_content_with_glosslinks(self, content, ge_links=None, gs_links=None):
         if not ge_links and not gs_links:
             self.gen.characters(full_cleanup(content))
         else:
@@ -85,7 +85,7 @@ class TEIWriter(XMLWriter):
             self.gen.characters(content_left)
 
     def print_head(self, dictionary='unknown', edition='TODO', entry_count='TODO', lexeme_count='TODO',
-                   sense_count='TODO', year='TODO', month='TODO'):
+                   sense_count='TODO', year='TODO', month='TODO', url=None):
         self.start_document()
         self.start_node('TEI', {})
         self.start_node('fileDesc', {})
@@ -94,7 +94,7 @@ class TEIWriter(XMLWriter):
         if dictionary == 'tezaurs':
             self._do_leaf_node('title', {}, 'Tēzaurs.lv - Dictionary and Thesaurus of Latvian')
         elif dictionary == 'mlvv':
-            self._do_leaf_node('title', {}, 'MLVV - Dictionary of Modern Latvian')
+            self._do_leaf_node('title', {}, 'MLVV - Dictionary of Contemporary Latvian')
         elif dictionary == 'llvv':
             self._do_leaf_node('title', {}, 'LLVV - Dictionary of Standard Latvian (digitalized)')
         else:
@@ -103,7 +103,7 @@ class TEIWriter(XMLWriter):
         if dictionary == 'tezaurs':
             self._do_leaf_node('editor', {}, 'Andrejs Spektors et al.')
         elif dictionary == 'mlvv':
-            self._do_leaf_node('editor', {}, 'Santa Briede et al.')
+            self._do_leaf_node('editor', {}, 'Ieva Zuicena et al.')
         elif dictionary == 'llvv':
             self._do_leaf_node('editor', {}, 'Laimdots Ceplītis et al.')
         self.end_node('titleStmt')
@@ -153,12 +153,8 @@ class TEIWriter(XMLWriter):
             self.do_simple_leaf_node('licence', {'target': 'https://creativecommons.org/licenses/by-sa/4.0/'},
                                      'Creative Commons Attribution-ShareAlike 4.0 International License')
             self.end_node('availability')
-        if dictionary == 'tezaurs':
-            self.do_simple_leaf_node('ptr', {'target': 'https://tezaurs.lv'})
-        elif dictionary == 'mlvv':
-            self.do_simple_leaf_node('ptr', {'target': 'https://mlvv.tezaurs.lv'})
-        elif dictionary == 'llvv':
-            self.do_simple_leaf_node('ptr', {'target': 'https://llvv.tezaurs.lv'})
+        if dictionary == 'tezaurs' or dictionary == 'mlvv' or dictionary == 'llvv':
+            self.do_simple_leaf_node('ptr', {'target': url})
         self.end_node('publicationStmt')
 
         if dictionary == 'llvv':
