@@ -17,6 +17,8 @@ def get_dict_version(connection):
         info->'counts'->'lexemes' #>> '{{}}' as lexemes,
         info->'counts'->'senses' #>> '{{}}' as senses,
         info->'release_name_en' #>> '{{}}' as release_name_en,
+        info->'editors_en' #>> '{{}}' as editors_en,
+        info->'copyright_en' #>> '{{}}' as copyright_en,
         info->'canonical_url' #>> '{{}}' as url
     FROM {db_connection_info['schema']}.metadata
 """
@@ -25,7 +27,8 @@ def get_dict_version(connection):
     return {
         'tag': row.tag, 'title': row.title, 'entries': row.entries, 'lexemes': row.lexemes,
         'senses': row.senses, 'year': row.year, 'month': row.month, 'dictionary': row.dictionary,
-        'release_name_en': row.release_name_en, 'url': row.url}
+        'release_name_en': row.release_name_en, 'editors_en': row.editors_en, 'copyright_en': row.copyright_en,
+        'url': row.url}
 
 
 def fetch_sources(connection):

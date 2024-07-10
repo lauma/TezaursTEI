@@ -84,8 +84,9 @@ class TEIWriter(XMLWriter):
                 match = regex.fullmatch(glosslink_regex, content_left)
             self.gen.characters(content_left)
 
-    def print_head(self, dictionary='unknown', edition='TODO', entry_count='TODO', lexeme_count='TODO',
-                   sense_count='TODO', year='TODO', month='TODO', url=None):
+    def print_head(self, dictionary='unknown', edition='TODO', editors='TODO',
+                   entry_count='TODO', lexeme_count='TODO', sense_count='TODO',
+                   year='TODO', month='TODO', url=None, copyright=None):
         self.start_document()
         self.start_node('TEI', {})
         self.start_node('fileDesc', {})
@@ -100,12 +101,8 @@ class TEIWriter(XMLWriter):
         else:
             self._do_leaf_node('title', {}, 'Dictionary')
 
-        if dictionary == 'tezaurs':
-            self._do_leaf_node('editor', {}, 'Andrejs Spektors et al.')
-        elif dictionary == 'mlvv':
-            self._do_leaf_node('editor', {}, 'Ieva Zuicena et al.')
-        elif dictionary == 'llvv':
-            self._do_leaf_node('editor', {}, 'Laimdots Ceplītis et al.')
+        if dictionary == 'tezaurs' or dictionary == 'mlvv' or dictionary == 'llvv':
+            self._do_leaf_node('editor', {}, editors)
         self.end_node('titleStmt')
 
         self.start_node('editionStmt', {})
@@ -143,17 +140,13 @@ class TEIWriter(XMLWriter):
         if dictionary == 'tezaurs' or dictionary == 'mlvv' or dictionary == 'llvv':
             self.start_node('availability', {'status': 'free'})
 
-            if dictionary == 'tezaurs':
-                self.do_simple_leaf_node('p', {}, f'Copyright 2009-{year}, AI Lab at IMCS, University of Latvia')
-            elif dictionary == 'mlvv':
-                self.do_simple_leaf_node('p', {}, f'Copyright 2009-{year}, LII at University of Latvia')
-            elif dictionary == 'llvv':
-                self.do_simple_leaf_node('p', {}, f'Copyright 2005-{year}, AI Lab at IMCS, University of Latvia')
+            if url is not None and (dictionary == 'tezaurs' or dictionary == 'mlvv' or dictionary == 'llvv'):
+                self.do_simple_leaf_node('p', {}, copyright)
 
             self.do_simple_leaf_node('licence', {'target': 'https://creativecommons.org/licenses/by-sa/4.0/'},
                                      'Creative Commons Attribution-ShareAlike 4.0 International License')
             self.end_node('availability')
-        if dictionary == 'tezaurs' or dictionary == 'mlvv' or dictionary == 'llvv':
+        if url is not None and (dictionary == 'tezaurs' or dictionary == 'mlvv' or dictionary == 'llvv'):
             self.do_simple_leaf_node('ptr', {'target': url})
         self.end_node('publicationStmt')
 
