@@ -16,6 +16,8 @@ def get_dict_version(connection):
         info->'counts'->'entries' #>> '{{}}' as entries,
         info->'counts'->'lexemes' #>> '{{}}' as lexemes,
         info->'counts'->'senses' #>> '{{}}' as senses,
+        info->'title_short' #>> '{{}}' as title_short,
+        info->'title_en' #>> '{{}}' as title_long,
         info->'release_name_en' #>> '{{}}' as release_name_en,
         info->'editors_en' #>> '{{}}' as editors_en,
         info->'copyright_en' #>> '{{}}' as copyright_en,
@@ -25,9 +27,11 @@ def get_dict_version(connection):
     cursor.execute(sql_dict_properties)
     row = cursor.fetchone()
     return {
-        'tag': row.tag, 'title': row.title, 'entries': row.entries, 'lexemes': row.lexemes,
-        'senses': row.senses, 'year': row.year, 'month': row.month, 'dictionary': row.dictionary,
+        'dictionary': row.dictionary,
+        'title_short': row.title_short, 'title_long': row.title_long,
         'release_name_en': row.release_name_en, 'editors_en': row.editors_en, 'copyright_en': row.copyright_en,
+        'entries': row.entries, 'lexemes': row.lexemes, 'senses': row.senses,
+        'year': row.year, 'month': row.month,
         'url': row.url}
 
 

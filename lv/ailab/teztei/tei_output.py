@@ -84,7 +84,8 @@ class TEIWriter(XMLWriter):
                 match = regex.fullmatch(glosslink_regex, content_left)
             self.gen.characters(content_left)
 
-    def print_head(self, dictionary='unknown', edition='TODO', editors='TODO',
+    def print_head(self, dictionary, title_short, title_long = None,
+                   edition='TODO', editors='TODO',
                    entry_count='TODO', lexeme_count='TODO', sense_count='TODO',
                    year='TODO', month='TODO', url=None, copyright=None):
         self.start_document()
@@ -92,14 +93,17 @@ class TEIWriter(XMLWriter):
         self.start_node('fileDesc', {})
 
         self.start_node('titleStmt', {})
-        if dictionary == 'tezaurs':
-            self._do_leaf_node('title', {}, 'Tēzaurs.lv - Dictionary and Thesaurus of Latvian')
-        elif dictionary == 'mlvv':
-            self._do_leaf_node('title', {}, 'MLVV - Dictionary of Contemporary Latvian')
-        elif dictionary == 'llvv':
-            self._do_leaf_node('title', {}, 'LLVV - Dictionary of Standard Latvian (digitalized)')
+        title = None
+        if title_short is None and title_long is None:
+            title = 'Dictionary'
+        elif title_long is None:
+            title = title_short
+        elif title_short is None:
+            title = title_long
         else:
-            self._do_leaf_node('title', {}, 'Dictionary')
+            title = title_short + ' — ' + title_long
+
+        self._do_leaf_node('title', {}, title)
 
         if dictionary == 'tezaurs' or dictionary == 'mlvv' or dictionary == 'llvv':
             self._do_leaf_node('editor', {}, editors)

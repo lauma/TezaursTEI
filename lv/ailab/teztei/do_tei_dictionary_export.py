@@ -50,7 +50,8 @@ filename = f'{dict_version}_tei{filename_infix}.xml'
 with open(filename, 'w', encoding='utf8') as f:
     tei_printer = TEIWriter(f, dict_version, whitelist)
     tei_printer.print_head(
-        dict_version_data['dictionary'], dict_version_data['release_name_en'], dict_version_data['editors_en'],
+        dict_version_data['dictionary'], dict_version_data['title_short'], dict_version_data ['title_long'],
+        dict_version_data['release_name_en'], dict_version_data['editors_en'],
         dict_version_data['entries'], dict_version_data['lexemes'], dict_version_data['senses'],
         dict_version_data['year'], dict_version_data['month'],
         dict_version_data['url'], dict_version_data['copyright_en'])
