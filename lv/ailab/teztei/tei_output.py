@@ -71,7 +71,7 @@ class TEIWriter(XMLWriter):
                         print(
                             f'Invalid gloss link {link_type}:{link_id} in entry {self.debug_entry_id}'
                             + f' (available links {gs_links}).\n')
-                    link_ref = gs_links[link_id]
+                    link_ref = gs_links[link_id]['softid']
                 else:
                     print(f'Empty gloss link {link_type}:{link_id} in entry {self.debug_entry_id}\n')
                 if link_ref:

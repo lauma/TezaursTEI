@@ -56,7 +56,7 @@ def fetch_gloss_sense_links(connection, sense_id):
         return
     cursor = connection.cursor(cursor_factory=NamedTupleCursor)
     sql_links = f"""
-SELECT r.id, s.order_no as sense_order, ps.order_no as parent_order, e.human_key
+SELECT r.id, s.id as sense_id, s.order_no as sense_order, ps.order_no as parent_order, e.human_key
 FROM {db_connection_info['schema']}.sense_relations r
 JOIN {db_connection_info['schema']}.sense_rel_types rt on r.type_id = rt.id
 JOIN {db_connection_info['schema']}.senses s on r.sense_2_id = s.id
@@ -75,7 +75,7 @@ WHERE rt.name = 'hasGlossLink' and NOT e.hidden and NOT s.hidden and (ps.hidden 
         if gloss_link.parent_order and gloss_link.parent_order is not None:
             endpoint = endpoint + '/' + str(gloss_link.parent_order)
         endpoint = endpoint + '/' + str(gloss_link.sense_order)
-        result[gloss_link.id] = endpoint
+        result[gloss_link.id]= {'softid': endpoint, 'hardid': gloss_link.sense_id}
     return result
 
 
