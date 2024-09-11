@@ -97,3 +97,37 @@ WHERE l.id = {lexeme_id} AND s.synset_id<>0 AND NOT s.hidden
     for s in senses:
         result.append({'sense_id': s.sense_id, 'synset_id': s.synset_id})
     return result
+
+
+def fetch_sources_by_esl_id(connection, entry_id, sense_id, lexeme_id):
+    if not entry_id and not sense_id and not lexeme_id:
+        return
+    cursor = connection.cursor(cursor_factory=NamedTupleCursor)
+    where_clause = ""
+    if entry_id:
+        where_clause = f"""entry_id = {entry_id}"""
+    if sense_id:
+        if where_clause:
+            where_clause = where_clause + " and "
+        where_clause = where_clause + f"""sense_id = {sense_id}"""
+    if lexeme_id:
+        if where_clause:
+            where_clause = where_clause + " and "
+        where_clause = where_clause + f"""lexeme_id = {lexeme_id}"""
+    sql_sources = f"""
+SELECT abbr, data->'sourceDetails' as details
+FROM {db_connection_info['schema']}.source_links scl
+JOIN {db_connection_info['schema']}.sources sc ON scl.source_id = sc.id
+WHERE {where_clause}
+ORDER BY order_no
+"""
+    cursor.execute(sql_sources)
+    sources = cursor.fetchall()
+    if not sources:
+        return
+    result = []
+    for source in sources:
+        source_dict = {'abbr': source.abbr, 'details': source.details}
+        result.append(source_dict)
+    return result
+

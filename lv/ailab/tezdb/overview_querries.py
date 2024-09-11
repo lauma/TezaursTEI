@@ -1,6 +1,7 @@
 from lv.ailab.tezdb.db_config import db_connection_info
 from lv.ailab.tezdb.query_uttils import extract_gram, extract_paradigm_stems
-from lv.ailab.tezdb.single_entry_queries import fetch_lexemes, fetch_senses, fetch_entry_sources, fetch_examples
+from lv.ailab.tezdb.single_entry_queries import fetch_lexemes, fetch_senses, fetch_examples
+from lv.ailab.tezdb.subentry_queries import fetch_sources_by_esl_id
 
 from psycopg2.extras import NamedTupleCursor
 
@@ -29,13 +30,14 @@ def get_dict_version(connection):
     return {
         'dictionary': row.dictionary,
         'title_short': row.title_short, 'title_long': row.title_long,
+        'tag': row.tag,
         'release_name_en': row.release_name_en, 'editors_en': row.editors_en, 'copyright_en': row.copyright_en,
         'entries': row.entries, 'lexemes': row.lexemes, 'senses': row.senses,
         'year': row.year, 'month': row.month,
         'url': row.url}
 
 
-def fetch_sources(connection):
+def fetch_all_sources(connection):
     cursor = connection.cursor(cursor_factory=NamedTupleCursor)
     sql_dict_sources = f"""
         SELECT abbr, title, url
@@ -51,8 +53,8 @@ def fetch_sources(connection):
             yield {'abbr': row.abbr, 'title': row.title, 'url': row.url}
 
 
-def fetch_entries(connection, omit_mwe=False, omit_wordparts=False, omit_pot_wordparts=False,
-                  do_entrylevel_exmples=False):
+def fetch_all_entries(connection, omit_mwe=False, omit_wordparts=False, omit_pot_wordparts=False,
+                      do_entrylevel_exmples=False):
     cursor = connection.cursor(cursor_factory=NamedTupleCursor)
     where_clause = ""
     if omit_mwe or omit_wordparts:
@@ -68,7 +70,7 @@ SELECT e.id, type_id, name as type_name, heading, human_key, homonym_no,
 FROM {db_connection_info['schema']}.entries e
 JOIN {db_connection_info['schema']}.entry_types et ON e.type_id = et.id
 WHERE {where_clause} NOT e.hidden
-ORDER BY type_id, heading
+ORDER BY type_id, heading, homonym_no
 """
     cursor.execute(sql_entries)
     counter = 0
@@ -104,14 +106,14 @@ ORDER BY type_id, heading
                 examples = fetch_examples(connection, row.id, True)
                 if examples:
                     result['examples'] = examples
-            sources = fetch_entry_sources(connection, row.id)
+            sources = fetch_sources_by_esl_id(connection, row.id, None, None)
             if sources:
                 result['sources'] = sources
             yield result
         print(f'entries: {counter}\r')
 
 
-def fetch_synseted_lexemes(connection):
+def fetch_all_synseted_lexemes(connection):
     cursor = connection.cursor(cursor_factory=NamedTupleCursor)
     sql_synset_lexemes = f"""
 SELECT l.id as id, l.entry_id as entry_id, l.lemma as lemma,
@@ -151,7 +153,7 @@ ORDER BY l.lemma ASC
         print(f'lexemes: {counter}\r')
 
 
-def fetch_synsets(connection):
+def fetch_all_synsets(connection):
     cursor = connection.cursor(cursor_factory=NamedTupleCursor)
     sql_synset = f"""
 SELECT syn.id

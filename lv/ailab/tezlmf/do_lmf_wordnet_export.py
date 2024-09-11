@@ -4,7 +4,7 @@ from lv.ailab.tezdb.db_config import db_connection_info
 
 import sys
 
-from lv.ailab.tezdb.overview_querries import fetch_synsets, fetch_synseted_lexemes, get_dict_version
+from lv.ailab.tezdb.overview_querries import fetch_all_synsets, fetch_all_synseted_lexemes, get_dict_version
 from lv.ailab.tezdb.single_sinset_queries import fetch_synset_senses, fetch_synset_lexemes, fetch_synset_relations, \
     fetch_omw_eq_relations
 from lv.ailab.tezdb.subentry_queries import fetch_synseted_senses_by_lexeme
@@ -35,14 +35,14 @@ with open(filename, 'w', encoding='utf8') as f:
     lmf_printer = LMFWriter(f, dict_version, wordnet_id)
     lmf_printer.print_head(wordnet_vers)
     try:
-        for lexeme in fetch_synseted_lexemes(connection):
+        for lexeme in fetch_all_synseted_lexemes(connection):
             synset_senses = fetch_synseted_senses_by_lexeme(connection, lexeme['id'])
             lmf_printer.print_lexeme(lexeme, synset_senses, print_tags)
     except BaseException as err:
         print("Lexeme was: " + lmf_printer.debug_id)
         raise
     try:
-        for synset_id in fetch_synsets(connection):
+        for synset_id in fetch_all_synsets(connection):
             synset_senses = fetch_synset_senses(connection, synset_id)
             synset_lexemes = fetch_synset_lexemes(connection, synset_id)
             relations = fetch_synset_relations(connection, synset_id)
