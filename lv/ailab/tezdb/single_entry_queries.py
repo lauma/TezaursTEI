@@ -4,7 +4,8 @@ from psycopg2.extras import NamedTupleCursor
 from lv.ailab.tezdb.db_config import db_connection_info
 from lv.ailab.tezdb.query_uttils import extract_gram
 from lv.ailab.tezdb.single_sinset_queries import fetch_synset_senses, fetch_synset_relations, fetch_gradset
-from lv.ailab.tezdb.subentry_queries import fetch_examples, fetch_gloss_entry_links, fetch_gloss_sense_links
+from lv.ailab.tezdb.subentry_queries import fetch_examples, fetch_gloss_entry_links, fetch_gloss_sense_links, \
+    fetch_sources_by_esl_id
 
 
 def fetch_lexemes(connection, entry_id, main_lex_id):
@@ -33,6 +34,9 @@ ORDER BY (l.id!={main_lex_id}), order_no
 
         gram_dict = extract_gram(lexeme, {'Stems'})
         lexeme_dict.update(gram_dict)
+        sources = fetch_sources_by_esl_id(connection, None, lexeme.id, None)
+        if sources:
+            lexeme_dict['sources'] = sources
         result.append(lexeme_dict)
     return result
 
@@ -92,6 +96,10 @@ ORDER BY order_no
         examples = fetch_examples(connection, sense.id)
         if examples:
             sense_dict['examples'] = examples
+        sources = fetch_sources_by_esl_id(connection, None, None, sense.id)
+        if sources:
+            sense_dict['sources'] = sources
+
         if regex.search(r'\[((?:\p{L}\p{M}*)+)\]\{e:\d+\}', sense.gloss):
             gloss_entry_links = fetch_gloss_entry_links(connection, sense.id)
             if gloss_entry_links:
@@ -100,6 +108,7 @@ ORDER BY order_no
             gloss_sense_links = fetch_gloss_sense_links(connection, sense.id)
             if gloss_sense_links:
                 sense_dict['gs_links'] = gloss_sense_links
+
         result.append(sense_dict)
     return result
 

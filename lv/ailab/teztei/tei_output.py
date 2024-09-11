@@ -226,7 +226,7 @@ class TEIWriter(XMLWriter):
         if 'etym' in entry:
             self._do_leaf_node('etym', {}, mandatory_normalization(entry['etym']), True)
         if 'sources' in entry:
-            self.print_entry_sources(entry['sources'])
+            self.print_esl_sources(entry['sources'])
         self.end_node('entry')
 
     def print_lexeme(self, lexeme, headword, entry_type, is_main=False):
@@ -244,6 +244,10 @@ class TEIWriter(XMLWriter):
                 self._do_leaf_node('pron', {}, prettify_pronunciation(pronun))
 
         self.print_gram(lexeme)
+
+        if 'sources' in lexeme:
+            self.print_esl_sources(lexeme['sources'])
+
         self.end_node('form')
 
     def print_gram(self, parent):
@@ -346,6 +350,9 @@ class TEIWriter(XMLWriter):
             for example in sense['examples']:
                 self.print_example(example)
 
+        if 'sources' in sense:
+            self.print_esl_sources(sense['sources'])
+
         if 'subsenses' in sense:
             for subsense in sense['subsenses']:
                 self.print_sense(subsense, sense_id)
@@ -374,7 +381,7 @@ class TEIWriter(XMLWriter):
 
         self.end_node('cit')
 
-    def print_entry_sources(self, sources):
+    def print_esl_sources(self, sources):
         if not sources:
             return
         self.start_node('listBibl', {})
