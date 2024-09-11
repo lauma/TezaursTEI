@@ -9,9 +9,11 @@ def fetch_synset_senses(connection, synset_id):
         return
     cursor = connection.cursor(cursor_factory=NamedTupleCursor)
     sql_synset_senses = f"""
-SELECT syn.id, s.id as sense_id, s.order_no as sense_no, s.gloss as gloss, e.human_key as entry_hk
+SELECT syn.id, s.id as sense_id, s.order_no as sense_no, s.gloss as gloss,
+       sp.order_no as parent_sense_no, e.human_key as entry_hk
 FROM {db_connection_info['schema']}.synsets syn
 RIGHT OUTER JOIN dict.senses s ON syn.id = s.synset_id
+LEFT OUTER JOIN dict.senses sp ON s.parent_sense_id = sp.id
 JOIN {db_connection_info['schema']}.entries e ON s.entry_id = e.id
 WHERE syn.id = {synset_id} and NOT s.hidden
 ORDER BY e.type_id, entry_hk
@@ -22,8 +24,12 @@ ORDER BY e.type_id, entry_hk
         return
     result = []
     for member in synset_members:
-        sense_dict = {'softid': f'{member.entry_hk}/{member.sense_no}',
-                       'hardid': member.sense_id, 'gloss': member.gloss}
+        sense_dict = {'hardid': member.sense_id, 'gloss': member.gloss}
+        if member.parent_sense_no:
+            sense_dict['softid'] = f'{member.entry_hk}/{member.parent_sense_no}/{member.sense_no}'
+        else:
+            sense_dict['softid'] = f'{member.entry_hk}/{member.sense_no}'
+
         examples = fetch_examples(connection, member.sense_id)
         if examples:
             sense_dict['examples'] = examples
