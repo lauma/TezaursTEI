@@ -394,6 +394,13 @@ class TEIWriter(XMLWriter):
                 self.do_simple_leaf_node('bibl', {'corresp': f"#{source['abbr']}"})
         self.end_node('listBibl')
 
+    def print_sem_derivs(self, sem_derivs):
+        for deriv in sem_derivs:
+            self.start_node('xr', {'type': 'derivative semantics', 'subtype': f'{deriv["role_me"]}'})
+            self._do_leaf_node('lbl', {}, f'{deriv["role_other"]}')
+            self._do_leaf_node('ref', {}, f'{self.dict_version}/{deriv["softid"]}')
+            self.end_node('xr')
+
     def print_synset_related(self, synset_id, synset_senses, synset_rels, gradset):
         if synset_senses:
             self.start_node('xr', {'type': 'synset', 'id': f'{self.dict_version}/synset:{synset_id}'})

@@ -79,6 +79,58 @@ WHERE rt.name = 'hasGlossLink' and NOT e.hidden and NOT s.hidden and (ps.hidden 
     return result
 
 
+def fetch_semantic_derivs_by_sense(connection, sense_id):
+    if not sense_id:
+        return
+    cursor = connection.cursor(cursor_factory=NamedTupleCursor)
+    result = []
+
+    sql_sem_derivs_1 = f"""
+SELECT sr.id, s2.id as sense_id, s2.order_no as sense_no, s2p.order_no as parent_sense_no,
+       e2.human_key as entry_hk, sr.data->'role_1' #>> '{{}}' as role1, sr.data->'role_2' #>> '{{}}' as role2
+FROM {db_connection_info['schema']}.sense_relations as sr
+JOIN {db_connection_info['schema']}.sense_rel_types as srl ON sr.type_id = srl.id
+JOIN {db_connection_info['schema']}.senses as s2 ON sr.sense_2_id = s2.id
+LEFT OUTER JOIN {db_connection_info['schema']}.senses s2p ON s2.parent_sense_id = s2p.id
+JOIN {db_connection_info['schema']}.entries e2 on s2.entry_id = e2.id
+WHERE sr.sense_1_id = {sense_id} and srl.relation_name = 'semanticRelation' and NOT s2.hidden
+      and (s2p.hidden is NULL or NOT s2p.hidden) and NOT e2.hidden
+"""
+    cursor.execute(sql_sem_derivs_1)
+    sem_derivs_1 = cursor.fetchall()
+    for deriv in sem_derivs_1:
+        deriv_link_dict = {'hardid': deriv.sense_id, 'role_me': deriv.role1, 'role_other': deriv.role2}
+        if deriv.parent_sense_no:
+            deriv_link_dict['softid'] = f'{deriv.entry_hk}/{deriv.parent_sense_no}/{deriv.sense_no}'
+        else:
+            deriv_link_dict['softid'] = f'{deriv.entry_hk}/{deriv.sense_no}'
+        result.append(deriv_link_dict)
+
+    sql_sem_derivs_2 = f"""
+SELECT sr.id, s1.id as sense_id, s1.order_no as sense_no, s1p.order_no as parent_sense_no,
+       e1.human_key as entry_hk, sr.data->'role_1' #>> '{{}}' as role1, sr.data->'role_2' #>> '{{}}' as role2
+FROM {db_connection_info['schema']}.sense_relations as sr
+JOIN {db_connection_info['schema']}.sense_rel_types as srl ON sr.type_id = srl.id
+JOIN {db_connection_info['schema']}.senses as s1 ON sr.sense_1_id = s1.id
+LEFT OUTER JOIN {db_connection_info['schema']}.senses s1p ON s1.parent_sense_id = s1p.id
+JOIN {db_connection_info['schema']}.entries e1 on s1.entry_id = e1.id
+WHERE sr.sense_1_id = {sense_id} and srl.relation_name = 'semanticRelation' and NOT s1.hidden
+      and (s1p.hidden is NULL or NOT s1p.hidden) and NOT e1.hidden
+"""
+    cursor.execute(sql_sem_derivs_2)
+    sem_derivs_2 = cursor.fetchall()
+    for deriv in sem_derivs_2:
+        deriv_link_dict = {'hardid': deriv.sense_id, 'role_other': deriv.role1, 'role_me': deriv.role2}
+        if deriv.parent_sense_no:
+            deriv_link_dict['softid'] = f'{deriv.entry_hk}/{deriv.parent_sense_no}/{deriv.sense_no}'
+        else:
+            deriv_link_dict['softid'] = f'{deriv.entry_hk}/{deriv.sense_no}'
+        result.append(deriv_link_dict)
+
+    sorted_result = sorted(result, key=lambda item: (item['role_me'], item['role_other'], item['softid']))
+    return sorted_result
+
+
 def fetch_synseted_senses_by_lexeme(connection, lexeme_id):
     if not lexeme_id:
         return

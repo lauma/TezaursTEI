@@ -5,7 +5,7 @@ from lv.ailab.tezdb.db_config import db_connection_info
 from lv.ailab.tezdb.query_uttils import extract_gram
 from lv.ailab.tezdb.single_sinset_queries import fetch_synset_senses, fetch_synset_relations, fetch_gradset
 from lv.ailab.tezdb.subentry_queries import fetch_examples, fetch_gloss_entry_links, fetch_gloss_sense_links, \
-    fetch_sources_by_esl_id
+    fetch_sources_by_esl_id, fetch_semantic_derivs_by_sense
 
 
 def fetch_lexemes(connection, entry_id, main_lex_id):
@@ -96,6 +96,9 @@ ORDER BY order_no
         examples = fetch_examples(connection, sense.id)
         if examples:
             sense_dict['examples'] = examples
+        sem_derivs = fetch_semantic_derivs_by_sense(connection, sense.id)
+        if (sem_derivs):
+            sense_dict['sem_derivs'] = examples
         sources = fetch_sources_by_esl_id(connection, None, None, sense.id)
         if sources:
             sense_dict['sources'] = sources
