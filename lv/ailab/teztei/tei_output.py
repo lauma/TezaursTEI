@@ -350,6 +350,10 @@ class TEIWriter(XMLWriter):
             for example in sense['examples']:
                 self.print_example(example)
 
+        if 'sem_derivs' in sense:
+            for deriv in sense['sem_derivs']:
+                self.print_sem_deriv(deriv)
+
         if 'sources' in sense:
             self.print_esl_sources(sense['sources'])
 
@@ -394,12 +398,11 @@ class TEIWriter(XMLWriter):
                 self.do_simple_leaf_node('bibl', {'corresp': f"#{source['abbr']}"})
         self.end_node('listBibl')
 
-    def print_sem_derivs(self, sem_derivs):
-        for deriv in sem_derivs:
-            self.start_node('xr', {'type': 'derivative semantics', 'subtype': f'{deriv["role_me"]}'})
-            self._do_leaf_node('lbl', {}, f'{deriv["role_other"]}')
-            self._do_leaf_node('ref', {}, f'{self.dict_version}/{deriv["softid"]}')
-            self.end_node('xr')
+    def print_sem_deriv(self, sem_deriv):
+        self.start_node('xr', {'type': 'derivative semantics', 'subtype': f'{sem_deriv["role_me"]}'})
+        self._do_leaf_node('lbl', {}, f'{sem_deriv["role_other"]}')
+        self._do_leaf_node('ref', {}, f'{self.dict_version}/{sem_deriv["softid"]}')
+        self.end_node('xr')
 
     def print_synset_related(self, synset_id, synset_senses, synset_rels, gradset):
         if synset_senses:

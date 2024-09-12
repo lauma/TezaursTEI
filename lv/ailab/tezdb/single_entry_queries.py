@@ -98,7 +98,7 @@ ORDER BY order_no
             sense_dict['examples'] = examples
         sem_derivs = fetch_semantic_derivs_by_sense(connection, sense.id)
         if (sem_derivs):
-            sense_dict['sem_derivs'] = examples
+            sense_dict['sem_derivs'] = sem_derivs
         sources = fetch_sources_by_esl_id(connection, None, None, sense.id)
         if sources:
             sense_dict['sources'] = sources
