@@ -1,4 +1,4 @@
-def extract_gram(element, omit_flags):
+def extract_gram(element, omit_flags={}):
     result = {}
     # Legacy POS logic to be substituted with general flag processing
     # if element.paradigm_data and 'Vārdšķira' in element.paradigm_data:

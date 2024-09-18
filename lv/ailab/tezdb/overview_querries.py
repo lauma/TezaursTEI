@@ -1,6 +1,6 @@
 from lv.ailab.tezdb.db_config import db_connection_info
 from lv.ailab.tezdb.query_uttils import extract_gram, extract_paradigm_stems
-from lv.ailab.tezdb.single_entry_queries import fetch_lexemes, fetch_senses, fetch_examples
+from lv.ailab.tezdb.single_entry_queries import fetch_lexemes, fetch_senses, fetch_examples, fetch_morpho_derivs
 from lv.ailab.tezdb.subentry_queries import fetch_sources_by_esl_id
 
 from psycopg2.extras import NamedTupleCursor
@@ -109,6 +109,9 @@ ORDER BY type_id, heading, homonym_no
             sources = fetch_sources_by_esl_id(connection, row.id, None, None)
             if sources:
                 result['sources'] = sources
+            morpho_derivs = fetch_morpho_derivs(connection, row.id)
+            if morpho_derivs:
+                result['morpho_derivs'] = morpho_derivs
             yield result
         print(f'entries: {counter}\r')
 

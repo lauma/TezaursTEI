@@ -115,3 +115,39 @@ ORDER BY order_no
         result.append(sense_dict)
     return result
 
+
+def fetch_morpho_derivs(connection, entry_id):
+    if not entry_id:
+        return
+    result = []
+    cursor = connection.cursor(cursor_factory=NamedTupleCursor)
+    sql_derivs_from = f"""
+SELECT er.id, ert.name, ert.name_inverse, e2.human_key, er.data as data FROM dict.entry_relations er
+JOIN dict.entry_rel_types ert on type_id = ert.id
+JOIN dict.entries e2 on entry_2_id = e2.id
+WHERE entry_1_id = {entry_id} and ert.name = 'derivativeOf' and NOT e2.hidden
+"""
+    cursor.execute(sql_derivs_from)
+    derivs_from = cursor.fetchall()
+    for deriv in derivs_from:
+        deriv_dict = {'role_me': deriv.name, 'role_target': deriv.name_inverse, 'target_softid': deriv.human_key}
+        gram_dict = extract_gram(deriv)
+        deriv_dict.update(gram_dict)
+        result.append(deriv_dict)
+
+    sql_derivs_to = f"""
+SELECT er.id, ert.name, ert.name_inverse, e1.human_key, er.data as data FROM dict.entry_relations er
+JOIN dict.entry_rel_types ert on type_id = ert.id
+JOIN dict.entries e1 on entry_1_id = e1.id
+WHERE entry_2_id = {entry_id} and ert.name = 'derivativeOf' and NOT e1.hidden
+"""
+    cursor.execute(sql_derivs_to)
+    derivs_to = cursor.fetchall()
+    for deriv in derivs_to:
+        deriv_dict = {'role_me': deriv.name_inverse, 'role_target': deriv.name, 'target_softid': deriv.human_key}
+        gram_dict = extract_gram(deriv)
+        deriv_dict.update(gram_dict)
+        result.append(deriv_dict)
+
+    sorted_result = sorted(result, key=lambda item: (item['role_me'], item['role_target'], item['target_softid']))
+    return sorted_result

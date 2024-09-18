@@ -99,11 +99,11 @@ WHERE sr.sense_1_id = {sense_id} and srl.relation_name = 'semanticRelation' and 
     cursor.execute(sql_sem_derivs_1)
     sem_derivs_1 = cursor.fetchall()
     for deriv in sem_derivs_1:
-        deriv_link_dict = {'hardid': deriv.sense_id, 'role_me': deriv.role1, 'role_other': deriv.role2}
+        deriv_link_dict = {'target_hardid': deriv.sense_id, 'role_me': deriv.role1, 'role_target': deriv.role2}
         if deriv.parent_sense_no:
-            deriv_link_dict['softid'] = f'{deriv.entry_hk}/{deriv.parent_sense_no}/{deriv.sense_no}'
+            deriv_link_dict['target_softid'] = f'{deriv.entry_hk}/{deriv.parent_sense_no}/{deriv.sense_no}'
         else:
-            deriv_link_dict['softid'] = f'{deriv.entry_hk}/{deriv.sense_no}'
+            deriv_link_dict['target_softid'] = f'{deriv.entry_hk}/{deriv.sense_no}'
         result.append(deriv_link_dict)
 
     sql_sem_derivs_2 = f"""
@@ -120,14 +120,14 @@ WHERE sr.sense_1_id = {sense_id} and srl.relation_name = 'semanticRelation' and 
     cursor.execute(sql_sem_derivs_2)
     sem_derivs_2 = cursor.fetchall()
     for deriv in sem_derivs_2:
-        deriv_link_dict = {'hardid': deriv.sense_id, 'role_other': deriv.role1, 'role_me': deriv.role2}
+        deriv_link_dict = {'target_hardid': deriv.sense_id, 'role_target': deriv.role1, 'role_me': deriv.role2}
         if deriv.parent_sense_no:
-            deriv_link_dict['softid'] = f'{deriv.entry_hk}/{deriv.parent_sense_no}/{deriv.sense_no}'
+            deriv_link_dict['target_softid'] = f'{deriv.entry_hk}/{deriv.parent_sense_no}/{deriv.sense_no}'
         else:
-            deriv_link_dict['softid'] = f'{deriv.entry_hk}/{deriv.sense_no}'
+            deriv_link_dict['target_softid'] = f'{deriv.entry_hk}/{deriv.sense_no}'
         result.append(deriv_link_dict)
 
-    sorted_result = sorted(result, key=lambda item: (item['role_me'], item['role_other'], item['softid']))
+    sorted_result = sorted(result, key=lambda item: (item['role_me'], item['role_target'], item['target_softid']))
     return sorted_result
 
 
