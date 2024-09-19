@@ -407,15 +407,15 @@ class TEIWriter(XMLWriter):
         self.end_node('listBibl')
 
     def print_sem_deriv(self, sem_deriv):
-        self.start_node('xr', {'type': 'derivativeSemantics', 'subtype': f'{sem_deriv["role_me"]}'})
-        self._do_leaf_node('lbl', {}, f'{sem_deriv["role_target"]}')
+        self.start_node('xr', {'type': 'derivativeSemantics', 'subtype': f'{sem_deriv["my_role"]}'})
+        self._do_leaf_node('lbl', {}, f'{sem_deriv["target_role"]}')
         self.do_simple_leaf_node('ref', {'target': f'{self.dict_version}/{sem_deriv["target_softid"]}'})
         self.end_node('xr')
 
     def print_morpho_deriv(self, morpho_deriv):
-        self.start_node('xr', {'type': 'derivativeMorphology', 'subtype': f'{morpho_deriv["role_me"]}'})
+        self.start_node('xr', {'type': 'derivativeMorphology', 'subtype': f'{morpho_deriv["my_role"]}'})
         self.print_gram(morpho_deriv, 'desc')
-        self._do_leaf_node('lbl', {}, f'{morpho_deriv["role_target"]}')
+        self._do_leaf_node('lbl', {}, f'{morpho_deriv["target_role"]}')
         self.do_simple_leaf_node('ref', {'target': f'{self.dict_version}/{morpho_deriv["target_softid"]}'})
         self.end_node('xr')
 
@@ -428,8 +428,9 @@ class TEIWriter(XMLWriter):
             self.end_node('xr')
         if synset_rels:
             for synset_rel in synset_rels:
-                self.start_node('xr', {'type': f'{synset_rel["other_name"]}'})
-                self.do_simple_leaf_node('ref', {'target': f'{self.dict_version}/synset:{synset_rel["other"]}'})
+                self.start_node('xr', {'type': f'{synset_rel["my_role"]}'})
+                self._do_leaf_node('lbl', {}, f'{synset_rel["target_role"]}')
+                self.do_simple_leaf_node('ref', {'target': f'{self.dict_version}/synset:{synset_rel["target_id"]}'})
                 self.end_node('xr')
         if gradset:
             self.start_node('xr',

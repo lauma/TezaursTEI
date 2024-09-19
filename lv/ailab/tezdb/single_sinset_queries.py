@@ -44,37 +44,37 @@ def fetch_synset_relations(connection, synset_id):
 
     cursor = connection.cursor(cursor_factory=NamedTupleCursor)
     sql_synset_rels_1 = f"""
-SELECT rel.id, rel.synset_1_id as other, tp.name_inverse as other_name, tp.relation_name as rel_name
+SELECT rel.id, rel.synset_1_id as other, tp.name, tp.name_inverse, tp.relation_name as rel_name
 FROM {db_connection_info['schema']}.synset_relations rel
 JOIN {db_connection_info['schema']}.synset_rel_types tp ON rel.type_id = tp.id
 JOIN dict.senses s ON rel.synset_1_id = s.synset_id
 WHERE rel.synset_2_id = {synset_id} and NOT s.hidden
-GROUP BY rel.id, other_name, rel_name
+GROUP BY rel.id, tp.name_inverse, tp.name, rel_name
 """
     cursor.execute(sql_synset_rels_1)
     rel_members = cursor.fetchall()
     if rel_members:
         for member in rel_members:
-            result.append({'id': member.id, 'other': member.other, 'other_name': member.other_name,
-                           'relation': member.rel_name})
+            result.append({'target_id': member.other, 'target_role': member.name_inverse,
+                           'my_role': member.name, 'relation': member.rel_name})
 
     sql_synset_rels_2 = f"""
-SELECT rel.id, rel.synset_2_id as other, tp.name as other_name, tp.relation_name as rel_name
+SELECT rel.id, rel.synset_2_id as other, tp.name, tp.name_inverse, tp.relation_name as rel_name
 FROM {db_connection_info['schema']}.synset_relations rel
 JOIN {db_connection_info['schema']}.synset_rel_types tp ON rel.type_id = tp.id
 JOIN dict.senses s ON rel.synset_2_id = s.synset_id
 WHERE rel.synset_1_id = {synset_id} and NOT s.hidden
-GROUP BY rel.id, other_name, rel_name
+GROUP BY rel.id, tp.name, tp.name_inverse, rel_name
 """
 
     cursor.execute(sql_synset_rels_2)
     rel_members = cursor.fetchall()
     if rel_members:
         for member in rel_members:
-            result.append({'id': member.id, 'other': member.other, 'other_name': member.other_name,
-                           'relation': member.rel_name})
+            result.append({'target_id': member.other, 'target_role': member.name,
+                           'my_role': member.name_inverse, 'relation': member.rel_name})
 
-    sorted_result = sorted(result, key=lambda item: (item['relation'], item['other_name'], item['other']))
+    sorted_result = sorted(result, key=lambda item: (item['my_role'], item['target_role'], item['target_id']))
     return sorted_result
 
 

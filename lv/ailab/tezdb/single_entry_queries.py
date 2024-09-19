@@ -130,7 +130,7 @@ WHERE entry_1_id = {entry_id} and ert.name = 'derivativeOf' and NOT e2.hidden
     cursor.execute(sql_derivs_from)
     derivs_from = cursor.fetchall()
     for deriv in derivs_from:
-        deriv_dict = {'role_me': deriv.name, 'role_target': deriv.name_inverse, 'target_softid': deriv.human_key}
+        deriv_dict = {'my_role': deriv.name, 'target_role': deriv.name_inverse, 'target_softid': deriv.human_key}
         gram_dict = extract_gram(deriv)
         deriv_dict.update(gram_dict)
         result.append(deriv_dict)
@@ -144,10 +144,12 @@ WHERE entry_2_id = {entry_id} and ert.name = 'derivativeOf' and NOT e1.hidden
     cursor.execute(sql_derivs_to)
     derivs_to = cursor.fetchall()
     for deriv in derivs_to:
-        deriv_dict = {'role_me': deriv.name_inverse, 'role_target': deriv.name, 'target_softid': deriv.human_key}
-        gram_dict = extract_gram(deriv)
-        deriv_dict.update(gram_dict)
+        deriv_dict = {'my_role': deriv.name_inverse, 'target_role': deriv.name, 'target_softid': deriv.human_key}
+        # 2024-09-19 ar valodniekiem WN seminārā tiek runāts, ka loģiskāk ir formantu un celma informāciju redzēt pie
+        # atvasinājuma, nevis atvasināmā.
+        #gram_dict = extract_gram(deriv)
+        #deriv_dict.update(gram_dict)
         result.append(deriv_dict)
 
-    sorted_result = sorted(result, key=lambda item: (item['role_me'], item['role_target'], item['target_softid']))
+    sorted_result = sorted(result, key=lambda item: (item['my_role'], item['target_role'], item['target_softid']))
     return sorted_result
