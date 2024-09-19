@@ -253,11 +253,14 @@ class TEIWriter(XMLWriter):
 
         self.end_node('form')
 
-    def print_gram(self, parent):
+    def print_gram(self, parent, wraper_elem_name=None):
         # if 'pos' not in parent and 'flags' not in parent and 'struct_restr' not in parent and \
         if 'flags' not in parent and 'struct_restr' not in parent and \
                 'free_text' not in parent and 'infl_text' not in parent:
             return
+
+        if wraper_elem_name:
+            self.start_node(wraper_elem_name, {})
 
         self.start_node('gramGrp', {})
         # TODO vai šito vajag?
@@ -298,6 +301,8 @@ class TEIWriter(XMLWriter):
             self._do_leaf_node('gram', {}, prettify_text_with_pronunciation(parent['free_text']))
 
         self.end_node('gramGrp')
+        if wraper_elem_name:
+            self.end_node(wraper_elem_name)
 
     # TODO piesaistīt karoga anglisko nosaukumu
     def print_flags(self, flags):
@@ -409,7 +414,7 @@ class TEIWriter(XMLWriter):
 
     def print_morpho_deriv(self, morpho_deriv):
         self.start_node('xr', {'type': 'derivativeMorphology', 'subtype': f'{morpho_deriv["role_me"]}'})
-        self.print_gram(morpho_deriv)
+        self.print_gram(morpho_deriv, 'desc')
         self._do_leaf_node('lbl', {}, f'{morpho_deriv["role_target"]}')
         self.do_simple_leaf_node('ref', {'target': f'{self.dict_version}/{morpho_deriv["target_softid"]}'})
         self.end_node('xr')
