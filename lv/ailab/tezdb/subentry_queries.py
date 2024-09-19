@@ -114,7 +114,7 @@ JOIN {db_connection_info['schema']}.sense_rel_types as srl ON sr.type_id = srl.i
 JOIN {db_connection_info['schema']}.senses as s1 ON sr.sense_1_id = s1.id
 LEFT OUTER JOIN {db_connection_info['schema']}.senses s1p ON s1.parent_sense_id = s1p.id
 JOIN {db_connection_info['schema']}.entries e1 on s1.entry_id = e1.id
-WHERE sr.sense__id = {sense_id} and srl.relation_name = 'semanticRelation' and NOT s1.hidden
+WHERE sr.sense_2_id = {sense_id} and srl.relation_name = 'semanticRelation' and NOT s1.hidden
       and (s1p.hidden is NULL or NOT s1p.hidden) and NOT e1.hidden
 """
     cursor.execute(sql_sem_derivs_2)
