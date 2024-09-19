@@ -55,8 +55,8 @@ GROUP BY rel.id, tp.name_inverse, tp.name, rel_name
     rel_members = cursor.fetchall()
     if rel_members:
         for member in rel_members:
-            result.append({'target_id': member.other, 'target_role': member.name_inverse,
-                           'my_role': member.name, 'relation': member.rel_name})
+            result.append({'target_id': member.other, 'target_role': member.name,
+                           'my_role': member.name_inverse, 'relation': member.rel_name})
 
     sql_synset_rels_2 = f"""
 SELECT rel.id, rel.synset_2_id as other, tp.name, tp.name_inverse, tp.relation_name as rel_name
@@ -71,8 +71,8 @@ GROUP BY rel.id, tp.name, tp.name_inverse, rel_name
     rel_members = cursor.fetchall()
     if rel_members:
         for member in rel_members:
-            result.append({'target_id': member.other, 'target_role': member.name,
-                           'my_role': member.name_inverse, 'relation': member.rel_name})
+            result.append({'target_id': member.other, 'target_role': member.name_inverse,
+                           'my_role': member.name, 'relation': member.rel_name})
 
     sorted_result = sorted(result, key=lambda item: (item['my_role'], item['target_role'], item['target_id']))
     return sorted_result
