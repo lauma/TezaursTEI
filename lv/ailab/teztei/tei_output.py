@@ -402,13 +402,13 @@ class TEIWriter(XMLWriter):
         self.end_node('listBibl')
 
     def print_sem_deriv(self, sem_deriv):
-        self.start_node('xr', {'type': 'derivative semantics', 'subtype': f'{sem_deriv["role_me"]}'})
+        self.start_node('xr', {'type': 'derivativeSemantics', 'subtype': f'{sem_deriv["role_me"]}'})
         self._do_leaf_node('lbl', {}, f'{sem_deriv["role_target"]}')
         self.do_simple_leaf_node('ref', {'target': f'{self.dict_version}/{sem_deriv["target_softid"]}'})
         self.end_node('xr')
 
     def print_morpho_deriv(self, morpho_deriv):
-        self.start_node('xr', {'type': 'derivative morphology', 'subtype': f'{morpho_deriv["role_me"]}'})
+        self.start_node('xr', {'type': 'derivativeMorphology', 'subtype': f'{morpho_deriv["role_me"]}'})
         self.print_gram(morpho_deriv)
         self._do_leaf_node('lbl', {}, f'{morpho_deriv["role_target"]}')
         self.do_simple_leaf_node('ref', {'target': f'{self.dict_version}/{morpho_deriv["target_softid"]}'})
@@ -428,12 +428,12 @@ class TEIWriter(XMLWriter):
                 self.end_node('xr')
         if gradset:
             self.start_node('xr',
-                            {'type': 'gradation_set', 'id': f'{self.dict_version}/gradset:{gradset["gradset_id"]}'})
+                            {'type': 'gradationSet', 'id': f'{self.dict_version}/gradset:{gradset["gradset_id"]}'})
             for synset in gradset['member_synsets']:
                 self.do_simple_leaf_node('ref', {'target': f'{self.dict_version}/synset:{synset}'})
             self.end_node('xr')
             if gradset['gradset_cat']:
-                self.start_node('xr', {'type': 'gradation_class'})
+                self.start_node('xr', {'type': 'gradationClass'})
                 self.do_simple_leaf_node('ref', {'target': f'{self.dict_version}/synset:{gradset["gradset_cat"]}'})
                 self.end_node('xr')
 
