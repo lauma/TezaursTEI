@@ -404,14 +404,14 @@ class TEIWriter(XMLWriter):
     def print_sem_deriv(self, sem_deriv):
         self.start_node('xr', {'type': 'derivative semantics', 'subtype': f'{sem_deriv["role_me"]}'})
         self._do_leaf_node('lbl', {}, f'{sem_deriv["role_target"]}')
-        self._do_leaf_node('ref', {}, f'{self.dict_version}/{sem_deriv["target_softid"]}')
+        self.do_simple_leaf_node('ref', {'target': f'{self.dict_version}/{sem_deriv["target_softid"]}'})
         self.end_node('xr')
 
     def print_morpho_deriv(self, morpho_deriv):
         self.start_node('xr', {'type': 'derivative morphology', 'subtype': f'{morpho_deriv["role_me"]}'})
-        self._do_leaf_node('lbl', {}, f'{morpho_deriv["role_target"]}')
         self.print_gram(morpho_deriv)
-        self._do_leaf_node('ref', {}, f'{self.dict_version}/{morpho_deriv["target_softid"]}')
+        self._do_leaf_node('lbl', {}, f'{morpho_deriv["role_target"]}')
+        self.do_simple_leaf_node('ref', {'target': f'{self.dict_version}/{morpho_deriv["target_softid"]}'})
         self.end_node('xr')
 
     def print_synset_related(self, synset_id, synset_senses, synset_rels, gradset):
@@ -419,22 +419,22 @@ class TEIWriter(XMLWriter):
             self.start_node('xr', {'type': 'synset', 'id': f'{self.dict_version}/synset:{synset_id}'})
             for synset_sense in synset_senses:
                 # TODO use hard ids when those are fixed
-                self._do_leaf_node('ref', {}, f'{self.dict_version}/{synset_sense["softid"]}')
+                self.do_simple_leaf_node('ref', {'target': f'{self.dict_version}/{synset_sense["softid"]}'})
             self.end_node('xr')
         if synset_rels:
             for synset_rel in synset_rels:
                 self.start_node('xr', {'type': f'{synset_rel["other_name"]}'})
-                self._do_leaf_node('ref', {}, f'{self.dict_version}/synset:{synset_rel["other"]}')
+                self.do_simple_leaf_node('ref', {'target': f'{self.dict_version}/synset:{synset_rel["other"]}'})
                 self.end_node('xr')
         if gradset:
             self.start_node('xr',
                             {'type': 'gradation_set', 'id': f'{self.dict_version}/gradset:{gradset["gradset_id"]}'})
             for synset in gradset['member_synsets']:
-                self._do_leaf_node('ref', {}, f'{self.dict_version}/synset:{synset}')
+                self.do_simple_leaf_node('ref', {'target': f'{self.dict_version}/synset:{synset}'})
             self.end_node('xr')
             if gradset['gradset_cat']:
                 self.start_node('xr', {'type': 'gradation_class'})
-                self._do_leaf_node('ref', {}, f'{self.dict_version}/synset:{gradset["gradset_cat"]}')
+                self.do_simple_leaf_node('ref', {'target': f'{self.dict_version}/synset:{gradset["gradset_cat"]}'})
                 self.end_node('xr')
 
 
