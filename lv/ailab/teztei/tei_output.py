@@ -84,7 +84,7 @@ class TEIWriter(XMLWriter):
                 match = regex.fullmatch(glosslink_regex, content_left)
             self.gen.characters(content_left)
 
-    def print_head(self, dictionary, title_long = 'Dictionary',
+    def print_head(self, dictionary, title_long = 'Dictionary', title_short=None,
                    edition='TODO', editors='TODO',
                    entry_count='TODO', lexeme_count='TODO', sense_count='TODO',
                    year='TODO', month='TODO', url=None, copyright=None):
@@ -93,7 +93,11 @@ class TEIWriter(XMLWriter):
         self.start_node('fileDesc', {})
 
         self.start_node('titleStmt', {})
-        self._do_leaf_node('title', {}, title_long)
+        full_title = title_long
+        # 2024-09-26 vēlreiz ar N. vienojamies, ka šeit liekt tikai `title_long`.
+        #if title_short:
+        #    full_title = title_short + ' — ' + title_long
+        self._do_leaf_node('title', {}, full_title)
 
         if dictionary == 'tezaurs' or dictionary == 'mlvv' or dictionary == 'llvv':
             self._do_leaf_node('editor', {}, editors)
