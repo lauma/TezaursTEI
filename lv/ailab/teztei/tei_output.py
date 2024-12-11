@@ -99,7 +99,8 @@ class TEIWriter(XMLWriter):
         #    full_title = title_short + ' — ' + title_long
         self._do_leaf_node('title', {}, full_title)
 
-        if dictionary == 'tezaurs' or dictionary == 'mlvv' or dictionary == 'llvv':
+        #if dictionary == 'tezaurs' or dictionary == 'mlvv' or dictionary == 'llvv' or dictionary == 'ltg':
+        if editors:
             self._do_leaf_node('editor', {}, editors)
         self.end_node('titleStmt')
 
@@ -115,7 +116,7 @@ class TEIWriter(XMLWriter):
 
         self.start_node('publicationStmt', {})
         self._do_leaf_node('date', {}, f"{year}-{month:02}")
-        if dictionary == 'tezaurs' or dictionary == 'llvv':
+        if dictionary == 'tezaurs' or dictionary == 'llvv' or dictionary == 'ltg':
             self.gen.ignorableWhitespace(self.indent_chars * self.xml_depth)
             self.gen.startElement('publisher', {})
             self.gen.startElement('ref', {'target': 'https://ailab.lv'})
@@ -135,16 +136,25 @@ class TEIWriter(XMLWriter):
             self.gen.endElement('publisher')
             self.gen.ignorableWhitespace(self.newline_chars)
 
-        if dictionary == 'tezaurs' or dictionary == 'mlvv' or dictionary == 'llvv':
+        if dictionary == 'ltg':
+            self.gen.ignorableWhitespace(self.indent_chars * self.xml_depth)
+            self.gen.startElement('publisher', {})
+            self.gen.startElement('ref', {'target': 'https://rta.lv/'})
+            self.gen.characters('Rēzekne Academy of Technologies')
+            self.gen.endElement('ref')
+            self.gen.endElement('publisher')
+            self.gen.ignorableWhitespace(self.newline_chars)
+
+        if dictionary == 'tezaurs' or dictionary == 'mlvv' or dictionary == 'llvv' or dictionary == 'ltg':
             self.start_node('availability', {'status': 'free'})
 
-            if url is not None and (dictionary == 'tezaurs' or dictionary == 'mlvv' or dictionary == 'llvv'):
+            if url is not None and (dictionary == 'tezaurs' or dictionary == 'mlvv' or dictionary == 'llvv' or dictionary == 'ltg'):
                 self.do_simple_leaf_node('p', {}, copyright)
 
             self.do_simple_leaf_node('licence', {'target': 'https://creativecommons.org/licenses/by-sa/4.0/'},
                                      'Creative Commons Attribution-ShareAlike 4.0 International License')
             self.end_node('availability')
-        if url is not None and (dictionary == 'tezaurs' or dictionary == 'mlvv' or dictionary == 'llvv'):
+        if url is not None and (dictionary == 'tezaurs' or dictionary == 'mlvv' or dictionary == 'llvv' or dictionary == 'ltg'):
             self.do_simple_leaf_node('ptr', {'target': url})
         self.end_node('publicationStmt')
 
