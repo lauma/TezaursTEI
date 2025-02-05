@@ -200,7 +200,7 @@ class TEIWriter(XMLWriter):
         self.end_node('back')
 
     # TODO: sakārtot, lai drukā ar jauno leksēmu drukāšanas funkciju un visas leksēmas
-    def print_entry(self, entry):
+    def print_entry(self, entry, ili_map=None):
         # if self.whitelist is not None and not self.whitelist.check(entry['mainLexeme']['lemma'], entry['hom_id']):
         if self.whitelist is not None and not self.whitelist.check(entry['headword'], entry['hom_id']):
             return
@@ -233,7 +233,7 @@ class TEIWriter(XMLWriter):
             is_first = False
         if 'senses' in entry:
             for sense in entry['senses']:
-                self.print_sense(sense, f'{self.dict_version}/{entry["id"]}')
+                self.print_sense(sense, f'{self.dict_version}/{entry["id"]}', ili_map)
         if 'examples' in entry:
             for example in entry['examples']:
                 self.print_example(example)
@@ -357,7 +357,7 @@ class TEIWriter(XMLWriter):
                     self._do_leaf_node('gram', {'type': 'languageMaterial'}, material)
             self.end_node('gramGrp')
 
-    def print_sense(self, sense, id_stub):
+    def print_sense(self, sense, id_stub, ili_map):
         sense_id = f'{id_stub}/{sense["ord"]}'
         sense_ord = f'{sense["ord"]}'
         self.start_node('sense', {'id': sense_id, 'n': sense_ord})
@@ -367,7 +367,7 @@ class TEIWriter(XMLWriter):
         if 'synset_id' in sense:  # and 'synset_senses' in sense:
 
             self.print_synset_related(sense['synset_id'], sense['synset_senses'], sense['synset_rels'],
-                                      sense['gradset'])
+                                      sense['gradset'], sense['external_eq_rels'], ili_map, sense['external_neq_rels'])
         if 'examples' in sense:
             for example in sense['examples']:
                 self.print_example(example)
@@ -381,7 +381,7 @@ class TEIWriter(XMLWriter):
 
         if 'subsenses' in sense:
             for subsense in sense['subsenses']:
-                self.print_sense(subsense, sense_id)
+                self.print_sense(subsense, sense_id, ili_map)
 
         self.end_node('sense')
 
@@ -435,12 +435,32 @@ class TEIWriter(XMLWriter):
         self.print_gram(morpho_deriv, 'desc')
         self.end_node('xr')
 
-    def print_synset_related(self, synset_id, synset_senses, synset_rels, gradset):
+    def print_synset_related(self, synset_id, synset_senses, synset_rels, gradset, external_eq_rels, ili_map, external_neq_rels):
         if synset_senses:
             self.start_node('xr', {'type': 'synset', 'id': f'{self.dict_version}/synset:{synset_id}'})
             for synset_sense in synset_senses:
                 # TODO use hard ids when those are fixed
-                self.do_simple_leaf_node('ref', {'target': f'{self.dict_version}/{synset_sense["softid"]}'})
+                self.do_simple_leaf_node('ref', {'type': 'synsetMember', 'target': f'{self.dict_version}/{synset_sense["softid"]}'})
+            if external_eq_rels:
+                pnw_id = None
+                for ext_rel in external_eq_rels:
+                    if ext_rel['type'] == 'pwn-3.0':
+                        pnw_id = ext_rel['id']
+                    self.do_simple_leaf_node(
+                        'ref', {'type': 'externalEqualent', 'subtype': ext_rel['desc'], 'target': ext_rel['id']})
+
+                if ili_map and pnw_id is not None:
+                    ili = ili_map.get_mapping(pnw_id)
+                    self.do_simple_leaf_node(
+                        'ref', {'type': 'externalEqualent', 'subtype': 'Open Multilingual Wordnet', 'target': ili})
+            if external_neq_rels:
+                for ext_rel in external_neq_rels:
+                    scope = ext_rel['scope']
+                    if scope.startswith('eq_has_'):
+                        scope = scope[7:8].capitalize() + scope[8:]
+                    self.do_simple_leaf_node(
+                        'ref', {'type': f'external{scope}', 'subtype': ext_rel['desc'], 'target': ext_rel['id']})
+
             self.end_node('xr')
         if synset_rels:
             for synset_rel in synset_rels:

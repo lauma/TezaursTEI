@@ -3,7 +3,8 @@ from psycopg2.extras import NamedTupleCursor
 
 from lv.ailab.tezdb.db_config import db_connection_info
 from lv.ailab.tezdb.query_uttils import extract_gram
-from lv.ailab.tezdb.single_sinset_queries import fetch_synset_senses, fetch_synset_relations, fetch_gradset
+from lv.ailab.tezdb.single_sinset_queries import fetch_synset_senses, fetch_synset_relations, fetch_gradset, \
+    fetch_exteral_synset_eq_relations, fetch_exteral_synset_neq_relations
 from lv.ailab.tezdb.subentry_queries import fetch_examples, fetch_gloss_entry_links, fetch_gloss_sense_links, \
     fetch_sources_by_esl_id, fetch_semantic_derivs_by_sense
 
@@ -91,6 +92,8 @@ ORDER BY order_no
             sense_dict['synset_senses'] = fetch_synset_senses(connection, sense.synset_id)
             sense_dict['synset_rels'] = fetch_synset_relations(connection, sense.synset_id)
             sense_dict['gradset'] = fetch_gradset(connection, sense.synset_id)
+            sense_dict['external_eq_rels'] = fetch_exteral_synset_eq_relations(connection, sense.synset_id)
+            sense_dict['external_neq_rels'] = fetch_exteral_synset_neq_relations(connection, sense.synset_id)
         if subsenses:
             sense_dict['subsenses'] = subsenses
         examples = fetch_examples(connection, sense.id)

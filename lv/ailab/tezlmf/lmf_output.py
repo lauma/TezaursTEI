@@ -50,18 +50,18 @@ class LMFWriter(XMLWriter):
                                                'synset': f'{gen_id}-{syn_sense["synset_id"]}'})
         self.end_node('LexicalEntry')
 
-    def print_synset(self, synset_id, synset_senses, synset_lexemes, relations, omw_relations, ili_map):
+    def print_synset(self, synset_id, synset_senses, synset_lexemes, relations, pwn_relations, ili_map):
         item_id = f'{self.wordnet_id}-{self.dict_version}-{synset_id}'
         self.debug_id = item_id
         memberstr = ''
         for lexeme in synset_lexemes:
             memberstr = f'{memberstr} {self.wordnet_id}-{self.dict_version}-{lexeme["entry"]}-{lexeme["lexeme_id"]}'
         pnw_id = None
-        if omw_relations:
-            if len(omw_relations) > 1:
-                print(f'Synset {synset_id} has more than 1 OMW relation.')
-            elif omw_relations[0]:
-                pnw_id = omw_relations[0]
+        if pwn_relations:
+            if len(pwn_relations) > 1:
+                print(f'Synset {synset_id} has more than 1 pwn-3.0 relation.')
+            elif pwn_relations[0]['id']:
+                pnw_id = pwn_relations[0]['id']
         ili = ili_map.get_mapping(pnw_id)
 
         self.start_node('Synset', {'id': item_id, 'ili': ili, 'members': memberstr.strip()})

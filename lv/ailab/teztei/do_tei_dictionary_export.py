@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from lv.ailab.dictutils.ili import IliMapping
 from lv.ailab.tezdb.connection import db_connect
 from lv.ailab.tezdb.db_config import db_connection_info
 from lv.ailab.tezdb.overview_querries import fetch_all_entries, get_dict_version, fetch_all_sources
@@ -48,6 +49,7 @@ dict_version_data = get_dict_version(connection)
 dict_version = dict_version_data['tag']
 filename = f'{dict_version}_tei{filename_infix}.xml'
 with open(filename, 'w', encoding='utf8') as f:
+    ili_map = IliMapping()
     tei_printer = TEIWriter(f, dict_version, whitelist)
     tei_printer.print_head(
         dict_version_data['dictionary'], dict_version_data ['title_long'], dict_version_data ['title_short'],
@@ -57,7 +59,7 @@ with open(filename, 'w', encoding='utf8') as f:
         dict_version_data['url'], dict_version_data['copyright_en'])
     try:
         for entry in fetch_all_entries(connection, omit_mwe, omit_wordparts, omit_pot_wordparts, do_entrylevel_exmples):
-            tei_printer.print_entry(entry)
+            tei_printer.print_entry(entry, ili_map)
     except BaseException as err:
         print("Entry was: " + tei_printer.debug_entry_id)
         raise

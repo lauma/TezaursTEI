@@ -127,19 +127,44 @@ ORDER BY e.type_id, entry_hk
     return result
 
 
-def fetch_omw_eq_relations(connection, synset_id):
+def fetch_exteral_synset_eq_relations(connection, synset_id, rel_type=None):
+    where_clause = ''
+    if rel_type is not None:
+        where_clause = f"and lt.name = '{rel_type}' "
     cursor = connection.cursor(cursor_factory=NamedTupleCursor)
     sql_synset_lexemes = f"""
-SELECT syn.id as synset_id, el.url as url, el.remote_id as remote_id
+SELECT syn.id as synset_id, el.url as url, el.remote_id as remote_id, lt.name as type,
+       lt.description as description
 FROM {db_connection_info['schema']}.synsets syn
 JOIN {db_connection_info['schema']}.synset_external_links el ON syn.id = el.synset_id
 JOIN {db_connection_info['schema']}.external_link_types lt ON el.link_type_id = lt.id
-WHERE syn.id = {synset_id} and lt.name = 'omw' and el.data is null
+WHERE syn.id = {synset_id} {where_clause}and el.data is null
 ORDER BY el.remote_id
 """
     cursor.execute(sql_synset_lexemes)
     rels = cursor.fetchall()
     result = []
     for rel in rels:
-        result.append(rel.remote_id)
+        result.append({'id': rel.remote_id, 'desc': rel.description, 'type': rel.type})
+    return result
+
+def fetch_exteral_synset_neq_relations(connection, synset_id, rel_type=None):
+    where_clause = ''
+    if rel_type is not None:
+        where_clause = f"and lt.name = '{rel_type}' "
+    cursor = connection.cursor(cursor_factory=NamedTupleCursor)
+    sql_synset_lexemes = f"""
+SELECT syn.id as synset_id, el.url as url, el.remote_id as remote_id, lt.name as type,
+       lt.description as description, el.data->'Relation' #>> '{{}}' as rel_scope
+FROM {db_connection_info['schema']}.synsets syn
+JOIN {db_connection_info['schema']}.synset_external_links el ON syn.id = el.synset_id
+JOIN {db_connection_info['schema']}.external_link_types lt ON el.link_type_id = lt.id
+WHERE syn.id = {synset_id} {where_clause}and el.data is not null
+ORDER BY el.remote_id
+"""
+    cursor.execute(sql_synset_lexemes)
+    rels = cursor.fetchall()
+    result = []
+    for rel in rels:
+        result.append({'id': rel.remote_id, 'desc': rel.description, 'type': rel.type, 'scope': rel.rel_scope})
     return result

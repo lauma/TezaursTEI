@@ -6,9 +6,9 @@ import sys
 
 from lv.ailab.tezdb.overview_querries import fetch_all_synsets, fetch_all_synseted_lexemes, get_dict_version
 from lv.ailab.tezdb.single_sinset_queries import fetch_synset_senses, fetch_synset_lexemes, fetch_synset_relations, \
-    fetch_omw_eq_relations
+    fetch_exteral_synset_eq_relations
 from lv.ailab.tezdb.subentry_queries import fetch_synseted_senses_by_lexeme
-from lv.ailab.tezlmf.ili import IliMapping
+from lv.ailab.dictutils.ili import IliMapping
 from lv.ailab.tezlmf.lmf_output import LMFWriter
 
 # TODO: izrunas, LMF POS no tēzaura vārdšķiras
@@ -46,7 +46,7 @@ with open(filename, 'w', encoding='utf8') as f:
             synset_senses = fetch_synset_senses(connection, synset_id)
             synset_lexemes = fetch_synset_lexemes(connection, synset_id)
             relations = fetch_synset_relations(connection, synset_id)
-            omw_relations = fetch_omw_eq_relations(connection, synset_id)
+            omw_relations = fetch_exteral_synset_eq_relations(connection, synset_id, 'pwn-3.0')
             # Drukās netukšos sinsetus, šobrīd tas nozīmē, ka vajag definīciju un leksēmu.
             if synset_senses and synset_lexemes:
                 lmf_printer.print_synset(synset_id, synset_senses, synset_lexemes, relations, omw_relations, ili)
