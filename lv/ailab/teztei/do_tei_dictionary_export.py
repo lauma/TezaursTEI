@@ -11,7 +11,6 @@ import sys
 # Major TODOs:
 # - export MWE links
 # - homonym grouping
-# - examples and example grammar
 # - migrate to hard sense IDs
 
 connection = None

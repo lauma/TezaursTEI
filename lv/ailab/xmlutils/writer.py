@@ -1,10 +1,9 @@
 from xml.sax.saxutils import XMLGenerator
 
-default_indent_chars = "  "
-default_newline_chars = "\n"
-
-
 class XMLWriter:
+
+    default_indent_chars = "  "
+    default_newline_chars = "\n"
 
     def __init__(self, file, indent_chars=default_indent_chars, newline_chars=default_newline_chars):
         self.indent_chars = indent_chars

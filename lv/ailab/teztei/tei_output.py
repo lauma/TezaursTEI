@@ -7,7 +7,6 @@ from lv.ailab.xmlutils.writer import XMLWriter
 
 
 class TEIWriter(XMLWriter):
-    dict_version = 0
 
     def __init__(self, file, dict_version, whitelist=None):
         super().__init__(file, "  ", "\n")

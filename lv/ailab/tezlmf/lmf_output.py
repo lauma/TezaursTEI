@@ -4,12 +4,11 @@ from lv.ailab.xmlutils.writer import XMLWriter
 
 
 class LMFWriter(XMLWriter):
-    debug_id = 0
-    wordnet_id = 0
-    dict_version = 0
+    #debug_id = 0
 
     def __init__(self, file, dict_version, wordnet_id):
         super().__init__(file, "  ", "\n")
+        self.debug_id = 0
         self.wordnet_id = wordnet_id
         self.dict_version = dict_version
 

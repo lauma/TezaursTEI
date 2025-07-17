@@ -2,11 +2,12 @@ import regex
 
 
 class IliMapping:
-    mapping_file = ''
-    mapping = {}
+    #mapping_file = ''
 
     def __init__(self, path='config/ili-map-pwn30.tab'):
         self.mapping_file = path
+        self.mapping = {}
+
         with open(self.mapping_file, 'r', encoding='utf8') as f:
             print(f'Loading ili mapping from {self.mapping_file}')
             for line in f:
