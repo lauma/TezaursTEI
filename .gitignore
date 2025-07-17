@@ -2,6 +2,15 @@
 *.xml
 *.ispell
 *.json
+*.log
+*-ignore.bat
+
+# DB config with password
+/lv/ailab/tezdb/db_config.py
+
+#MacOS stuff
+.DS_Store
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -105,6 +114,3 @@ ENV/
 # mypy
 .mypy_cache/
 
-.DS_Store
-/lv/ailab/tezdb/db_config.py
-*-ignore.bat

@@ -1,6 +1,7 @@
 import json
+import warnings
 
-from dictdiffer.testing import assert_no_diff
+import regex
 
 
 class LexemeProperties:
@@ -64,13 +65,20 @@ class LexemeProperties:
 
 class WordformReader:
 
+    bad_lines = []
+
     def __init__(self, wordform_list_path):
         self.wordform_file = open(wordform_list_path, 'r', encoding='utf8')
 
     def process_line_by_line(self):
         for line in self.wordform_file:
-            try:
-                json_result = json.loads("{" + line.rstrip(", \n\r") + "}")
-            except ValueError as e:
-                continue
-            yield json_result
+            if regex.search('\uFFFD', line):
+                self.bad_lines.append(line)
+            if not regex.search("^\s*[\[\]]?\s*$", line):
+                try:
+                    json_result = json.loads("{" + line.rstrip(", \n\r") + "}")
+                except ValueError as e:
+                    warnings.warn(f"Following was not parsed into JSON: {line}")
+                    self.bad_lines.append(line)
+                    continue
+                yield json_result
