@@ -228,7 +228,7 @@ class TEIWriter(XMLWriter):
         is_first = True
         self.print_gram(entry)
         for lexeme in entry['lexemes']:
-            self.print_lexeme(lexeme, entry['headword'], entry['type'], is_first)
+            self.print_lexeme(lexeme, f'{self.dict_version}/{entry["id"]}', entry['headword'], entry['type'], is_first)
             is_first = False
         if 'senses' in entry:
             for sense in entry['senses']:
@@ -245,11 +245,12 @@ class TEIWriter(XMLWriter):
             self.print_esl_sources(entry['sources'])
         self.end_node('entry')
 
-    def print_lexeme(self, lexeme, headword, entry_type, is_main=False):
+    def print_lexeme(self, lexeme, id_stub, headword, entry_type, is_main=False):
+        lexeme_id = f'{id_stub}/{lexeme["id"]}'
         if is_main:
-            self.start_node('form', {'type': 'lemma'})
+            self.start_node('form', {'id': lexeme_id, 'type': 'lemma'})
         else:
-            self.start_node('form', {'type': lexeme_type(lexeme['type'], entry_type)})
+            self.start_node('form', {'id': lexeme_id, 'type': lexeme_type(lexeme['type'], entry_type)})
 
         # TODO vai šito vajag?
         if is_main and lexeme['lemma'] != headword:

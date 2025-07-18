@@ -28,7 +28,7 @@ ORDER BY (l.id!={main_lex_id}), order_no
         return
     result = []
     for lexeme in lexemes:
-        lexeme_dict = {'lemma': lexeme.lemma, 'type': lexeme.lexeme_type}
+        lexeme_dict = {'lemma': lexeme.lemma, 'type': lexeme.lexeme_type, 'id' :lexeme.id}
 
         if lexeme.data and 'Pronunciations' in lexeme.data:
             lexeme_dict['pronun'] = lexeme.data['Pronunciations']
