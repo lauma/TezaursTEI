@@ -11,6 +11,7 @@ import warnings
 warn_multiple_influrls = True
 warn_multiple_inflsets = False
 
+# DB connection is only needed for general dictionary info, all the rest comes from JSON files.
 connection = None
 dbname = None
 dict_version = None
@@ -37,8 +38,7 @@ dict_version_data = get_dict_version(connection)
 dict_version = dict_version_data['tag']
 filename = f'{dict_version}_wordforms_tei.xml'
 with open(filename, 'w', encoding='utf8') as out:
-    tei_printer = TEIWriter(out, dict_version)
-    tei_printer.default_indent_chars = ' '
+    tei_printer = TEIWriter(out, dict_version, None, ' ')
     tei_printer.print_head(
         f"{dict_version_data['dictionary']}_wordforms", dict_version_data['title_long'], dict_version_data['title_short'],
         dict_version_data['release_name_en'], dict_version_data['editors_en'],

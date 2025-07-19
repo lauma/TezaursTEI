@@ -7,8 +7,8 @@ import regex
 
 class TEIWriter(XMLWriter):
 
-    def __init__(self, file, dict_version, whitelist=None):
-        super().__init__(file, "  ", "\n")
+    def __init__(self, file, dict_version, whitelist=None, indent_chars="  ", newline_chars="\n"):
+        super().__init__(file, indent_chars, newline_chars)
         self.whitelist = whitelist
         self.debug_entry_id = ''
         self.dict_version = dict_version

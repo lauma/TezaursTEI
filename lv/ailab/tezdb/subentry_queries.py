@@ -182,4 +182,3 @@ ORDER BY order_no
         source_dict = {'abbr': source.abbr, 'details': source.details}
         result.append(source_dict)
     return result
-
