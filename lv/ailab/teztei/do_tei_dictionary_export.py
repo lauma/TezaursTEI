@@ -5,8 +5,8 @@ from lv.ailab.tezdb.db_config import db_connection_info
 from lv.ailab.tezdb.overview_querries import fetch_all_entries, get_dict_version, fetch_all_sources
 from lv.ailab.teztei.tei_output import TEIWriter
 from lv.ailab.teztei.whitelist import EntryWhitelist
-
 import sys
+
 
 # Major TODOs:
 # - export MWE links
@@ -47,9 +47,9 @@ connection = db_connect()
 dict_version_data = get_dict_version(connection)
 dict_version = dict_version_data['tag']
 filename = f'{dict_version}_tei{filename_infix}.xml'
-with open(filename, 'w', encoding='utf8') as f:
+with open(filename, 'w', encoding='utf8') as out:
     ili_map = IliMapping()
-    tei_printer = TEIWriter(f, dict_version, whitelist)
+    tei_printer = TEIWriter(out, dict_version, whitelist)
     tei_printer.print_head(
         dict_version_data['dictionary'], dict_version_data ['title_long'], dict_version_data ['title_short'],
         dict_version_data['release_name_en'], dict_version_data['editors_en'],
@@ -63,5 +63,5 @@ with open(filename, 'w', encoding='utf8') as f:
         print("Entry was: " + tei_printer.debug_entry_id)
         raise
     tei_printer.print_back_matter(fetch_all_sources(connection))
-    tei_printer.print_tail()
+    tei_printer.print_tail(dict_version_data['dictionary'])
 print(f'Done! Output written to {filename}')

@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-import json
-
 from lv.ailab.tezwordforms.wordform_utils import LexemeProperties, WordformReader
+import json
 import sys
 import warnings
 
@@ -54,14 +53,4 @@ for form in sorted_forms:
     ispell_output.write(f'{form}\n')
 ispell_output.close()
 
-if len(wordform_source.bad_lines) > 0:
-    print (f"\n{len(wordform_source.bad_lines)} problem lines encountered.")
-    with open("bad_lines.log", 'w', encoding='utf8') as log:
-        log.writelines(wordform_source.bad_lines)
-        max_line_length = len(max(wordform_source.bad_lines, key=len))
-        min_line_length = len(min(wordform_source.bad_lines, key=len))
-        log.write(f'\nLongest line: {max_line_length}\n')
-        print(f'Longest line: {max_line_length}')
-        log.write(f'Shortest line: {min_line_length}\n')
-        print(f'Shortest line: {min_line_length}')
-        log.close()
+wordform_source.print_bad_line_log()
