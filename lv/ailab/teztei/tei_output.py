@@ -491,12 +491,13 @@ class TEIWriter(XMLWriter):
                 self.do_simple_leaf_node('ref', {'target': f'{self.dict_version}/synset:{gradset["gradset_cat"]}'})
                 self.end_node('xr')
 
-    def print_wordform_set_entry(self, entry_id_no, lexeme_id_no, lemma, formlist_from_json):
+    def print_wordform_set_entry(self, entry_id_no, lexeme_id_no, lemma, flags, formlist_from_json):
         full_lexeme_id = f'{self.dict_version}/{entry_id_no}/{lexeme_id_no}'
         self.start_node('entry', {'type': 'supplemental'})
         self.start_node('form', {})
         self.do_simple_leaf_node('ref', {'target': full_lexeme_id}, )
         self.do_simple_leaf_node('orth', {'type': 'lemma'}, lemma)
+        self.print_flags(flags)
         for wordform in formlist_from_json:
             self.print_single_wordform(wordform)
         self.end_node('form')

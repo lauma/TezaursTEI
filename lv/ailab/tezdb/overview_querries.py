@@ -175,3 +175,18 @@ ORDER BY id ASC
             counter = counter + 1
             yield row.id
         print(f'synsets: {counter}\r')
+
+def fetch_all_paradigms(connection):
+    result = {}
+    cursor = connection.cursor(cursor_factory=NamedTupleCursor)
+    sql_paradigms = f"""
+SELECT id, data as flags, human_key as paradigm
+FROM {db_connection_info['schema']}.paradigms
+ORDER BY human_key ASC
+"""
+    cursor.execute(sql_paradigms)
+    paradigm_data = cursor.fetchall()
+    for p in paradigm_data:
+        result[p.paradigm] = p.flags
+
+    return result

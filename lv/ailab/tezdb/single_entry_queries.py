@@ -33,7 +33,7 @@ ORDER BY (l.id!={main_lex_id}), order_no
         if lexeme.data and 'Pronunciations' in lexeme.data:
             lexeme_dict['pronun'] = lexeme.data['Pronunciations']
 
-        gram_dict = extract_gram(lexeme, {'Stems'})
+        gram_dict = extract_gram(lexeme, {'Stems', 'Morfotabulas tips', 'Paradigmas īpatnības'})
         lexeme_dict.update(gram_dict)
         sources = fetch_sources_by_esl_id(connection, None, lexeme.id, None)
         if sources:

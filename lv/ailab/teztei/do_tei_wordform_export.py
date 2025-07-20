@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 from lv.ailab.tezdb.connection import db_connect
 from lv.ailab.tezdb.db_config import db_connection_info
-from lv.ailab.tezdb.overview_querries import get_dict_version
+from lv.ailab.tezdb.overview_querries import get_dict_version, fetch_all_paradigms
+from lv.ailab.tezdb.query_uttils import combine_inhereted_flags
 from lv.ailab.teztei.tei_output import TEIWriter
 from lv.ailab.tezwordforms.wordform_utils import WordformReader, LexemeProperties
 import json
@@ -11,10 +12,11 @@ import warnings
 warn_multiple_influrls = True
 warn_multiple_inflsets = False
 
-# DB connection is only needed for general dictionary info, all the rest comes from JSON files.
+# DB connection is only needed for general dictionary info and paradigm flags, all the rest comes from JSON files.
 connection = None
 dbname = None
 dict_version = None
+paradigms = None
 lexeme_properties_path = "influrl-to-lexdata.json"
 wordform_list_path = "inflection-export.json"
 
@@ -36,6 +38,7 @@ lexeme_properties = LexemeProperties(lexeme_properties_path)
 connection = db_connect()
 dict_version_data = get_dict_version(connection)
 dict_version = dict_version_data['tag']
+paradigms = fetch_all_paradigms(connection)
 filename = f'{dict_version}_wordforms_tei.xml'
 with open(filename, 'w', encoding='utf8') as out:
     tei_printer = TEIWriter(out, dict_version, None, ' ')
@@ -64,8 +67,13 @@ with open(filename, 'w', encoding='utf8') as out:
             warnings.warn(f"URI {infl_url} has no lexeme property object, excluded from TEI result.")
         else:
             for properties in property_sets:
+                lexeme_flags = {}
+                if 'flags' in properties:
+                    lexeme_flags = properties['flags']
+                flags = combine_inhereted_flags(lexeme_flags, paradigms[properties['paradigm']],
+                                                {'Stems', 'Morfotabulas tips', 'Paradigmas īpatnības'})
                 tei_printer.print_wordform_set_entry(
-                    properties['entry_id'], properties['lexeme_id'], properties['lemma'] , infl_set)
+                    properties['entry_id'], properties['lexeme_id'], properties['lemma'], flags, infl_set)
 
     tei_printer.print_tail(f"{dict_version_data['dictionary']}_wordforms")
 

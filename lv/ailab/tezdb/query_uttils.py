@@ -18,22 +18,19 @@ def extract_gram(element, omit_flags={}):
     #        result['pos_text'] = gram['FreeText']
 
     # General flag/property processing
+    lexeme_flags = {}
+    paradigm_flags = {}
     if element.data and 'Gram' in element.data and 'Flags' in element.data['Gram'] \
             and element.data['Gram']['Flags']:
-        result['flags'] = {}
-        result['flags'] = element.data['Gram']['Flags']
-    # including flag inheritance from paradigms
+        lexeme_flags = element.data['Gram']['Flags']
     try:
         if element.paradigm_data:
-            for key in element.paradigm_data.keys():
-                if omit_flags and key in omit_flags:
-                    continue
-                if 'flags' not in result or not result['flags']:
-                    result['flags'] = {}
-                if key not in result['flags'] or not result['flags'][key]:
-                    result['flags'][key] = element.paradigm_data[key]
+            paradigm_flags = element.paradigm_data
     except AttributeError:
         pass
+    combined_flags = combine_inhereted_flags(lexeme_flags, paradigm_flags, omit_flags)
+    if combined_flags:
+        result['flags'] = combined_flags
 
     # Structural restrictions
     if element.data and 'Gram' in element.data and 'StructuralRestrictions' in element.data['Gram'] \
@@ -56,6 +53,19 @@ def extract_gram(element, omit_flags={}):
 
     return result
 
+def combine_inhereted_flags(lexeme_flags, paradigm_flags, omit_paradigm_flags={}):
+    result = {}
+    # General flag/property processing
+    if lexeme_flags:
+        result = lexeme_flags
+    # including flag inheritance from paradigms
+    if paradigm_flags:
+        for key in paradigm_flags.keys():
+            if omit_paradigm_flags and key in omit_paradigm_flags:
+                continue
+            if key not in result or not result[key]:
+                result[key] = paradigm_flags[key]
+    return result
 
 def extract_paradigm_stems(element):
     result = {}
