@@ -218,20 +218,22 @@ class TEIWriter(XMLWriter):
         entry_params = {'id': entry_id, 'sortKey': entry['headword']}
         main_lexeme = entry['lexemes'][0]
         if entry['hom_id'] > 0:
-            entry_params['n'] = str(entry["hom_id"])
+            entry_params['n'] = str(entry['hom_id'])
         if entry['type'] == 'mwe' or entry['type'] == 'MWE':
-            entry_params['type'] = "mwe"
+            entry_params['type'] = 'mwe'
         elif main_lexeme['lemma'] and 'pos' in entry and 'Vārda daļa' in main_lexeme['pos'] or \
                 entry['type'] == 'wordPart':
-            entry_params['type'] = "affix"  # FIXME
+            entry_params['type'] = 'affix'  # FIXME
         elif main_lexeme['lemma'] and 'pos' in entry and 'Saīsinājums' in main_lexeme['pos'] or \
                 'paradigm' in main_lexeme and main_lexeme['paradigm']['id'] == 'abbr':
-            entry_params['type'] = "abbr"
+            entry_params['type'] = 'abbr'
         elif main_lexeme['lemma'] and 'pos' in entry and 'Vārds svešvalodā' in main_lexeme['pos'] or \
                 'paradigm' in main_lexeme and main_lexeme['paradigm']['id'] == 'foreign':
-            entry_params['type'] = "foreign"
+            entry_params['type'] = 'foreign'
         else:
-            entry_params['type'] = "main"
+            entry_params['type'] = 'main'
+        if entry['hidden']:
+            entry_params['rend'] = 'hidden'
         self.start_node('entry', entry_params)
         # FIXME homonīmi
         # self.print_lexeme(entry['mainLexeme'], entry['headword'], True)
@@ -257,10 +259,14 @@ class TEIWriter(XMLWriter):
 
     def print_lexeme(self, lexeme, id_stub, headword, entry_type, is_main=False):
         lexeme_id = f'{id_stub}/{lexeme["id"]}'
+        form_attrs = {}
         if is_main:
-            self.start_node('form', {'id': lexeme_id, 'type': 'lemma'})
+            form_attrs = {'id': lexeme_id, 'type': 'lemma'}
         else:
-            self.start_node('form', {'id': lexeme_id, 'type': lexeme_type(lexeme['type'], entry_type)})
+            form_attrs = {'id': lexeme_id, 'type': lexeme_type(lexeme['type'], entry_type)}
+        if lexeme['hidden']:
+            form_attrs['rend'] = 'hidden'
+        self.start_node('form', form_attrs)
 
         # TODO vai šito vajag?
         if is_main and lexeme['lemma'] != headword:
@@ -371,7 +377,10 @@ class TEIWriter(XMLWriter):
     def print_sense(self, sense, id_stub, ili_map):
         sense_id = f'{id_stub}/{sense["ord"]}'
         sense_ord = f'{sense["ord"]}'
-        self.start_node('sense', {'id': sense_id, 'n': sense_ord})
+        sense_attr = {'id': sense_id, 'n': sense_ord}
+        if sense['hidden']:
+            sense_attr['rend'] = 'hidden'
+        self.start_node('sense', sense_attr)
         self.print_gram(sense)
         norm_gloss = mandatory_normalization(sense['gloss'])
         self._do_smart_leaf_node('def', {}, norm_gloss, sense.get('ge_links'), sense.get('gs_links'))  # Jo var būt None
@@ -399,7 +408,10 @@ class TEIWriter(XMLWriter):
     def print_example(self, example):
         if 'text' not in example or not example['text']:
             return
-        self.start_node('cit', {'type': 'example'})
+        cit_attr = {'type': 'example'}
+        if example['hidden']:
+            cit_attr['rend'] = 'hidden'
+        self.start_node('cit', cit_attr)
 
         if 'location' not in example:
             self.do_simple_leaf_node('quote', {}, example['text'])
@@ -432,13 +444,19 @@ class TEIWriter(XMLWriter):
         self.end_node('listBibl')
 
     def print_sem_deriv(self, sem_deriv):
-        self.start_node('xr', {'type': 'derivative', 'subtype': 'semantics'})
+        xr_attr = {'type': 'derivative', 'subtype': 'semantics'}
+        if sem_deriv['hidden']:
+            xr_attr['rend'] = 'hidden'
+        self.start_node('xr', xr_attr)
         self.do_simple_leaf_node('lbl', {'type': 'this'}, f'{sem_deriv["my_role"]}')
         self.do_simple_leaf_node('lbl', {'type': 'target'}, f'{sem_deriv["target_role"]}')
         self.do_simple_leaf_node('ref', {'target': f'{self.dict_version}/{sem_deriv["target_softid"]}'})
         self.end_node('xr')
 
     def print_morpho_deriv(self, morpho_deriv):
+        xr_attr = {'type': 'derivative', 'subtype': 'morphology'}
+        if morpho_deriv['hidden']:
+            xr_attr['rend'] = 'hidden'
         self.start_node('xr', {'type': 'derivative', 'subtype': 'morphology'})
         self.do_simple_leaf_node('lbl', {'type': 'this'}, f'{morpho_deriv["my_role"]}')
         self.do_simple_leaf_node('lbl', {'type': 'target'}, f'{morpho_deriv["target_role"]}')
@@ -475,7 +493,10 @@ class TEIWriter(XMLWriter):
             self.end_node('xr')
         if synset_rels:
             for synset_rel in synset_rels:
-                self.start_node('xr', {'type': f'{synset_rel["relation"]}'})
+                xr_attr = {'type': f'{synset_rel["relation"]}'}
+                if synset_rel['hidden']:
+                    xr_attr['rend'] = 'hidden'
+                self.start_node('xr', xr_attr)
                 self.do_simple_leaf_node('lbl', {'type': 'this'}, f'{synset_rel["my_role"]}')
                 self.do_simple_leaf_node('lbl', {'type': 'target'}, f'{synset_rel["target_role"]}')
                 self.do_simple_leaf_node('ref', {'target': f'{self.dict_version}/synset:{synset_rel["target_id"]}'})

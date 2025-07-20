@@ -66,10 +66,10 @@ def fetch_all_entries(connection, omit_mwe=False, omit_wordparts=False, omit_pot
         where_clause = '(' + where_clause + ')' + " and"
     sql_entries = f"""
 SELECT e.id, type_id, name as type_name, heading, human_key, homonym_no,
-    primary_lexeme_id, e.data->>'Etymology' as etym, e.data as data
+    primary_lexeme_id, e.data->>'Etymology' as etym, e.data as data, e.hidden
 FROM {db_connection_info['schema']}.entries e
 JOIN {db_connection_info['schema']}.entry_types et ON e.type_id = et.id
-WHERE {where_clause} NOT e.hidden
+WHERE {where_clause} (NOT e.hidden or e.reason_for_hiding='not-public')
 ORDER BY type_id, heading, homonym_no
 """
     cursor.execute(sql_entries)
@@ -80,7 +80,8 @@ ORDER BY type_id, heading, homonym_no
             break
         for row in rows:
             counter = counter + 1
-            result = {'id': row.human_key, 'hom_id': row.homonym_no, 'type': row.type_name, 'headword': row.heading}
+            result = {'id': row.human_key, 'hom_id': row.homonym_no, 'type': row.type_name,
+                      'headword': row.heading, 'hidden': row.hidden}
             if row.etym:
                 result['etym'] = row.etym
             gram_dict = extract_gram(row, None)
@@ -130,8 +131,11 @@ JOIN {db_connection_info['schema']}.lexeme_types lt on l.type_id = lt.id
 LEFT JOIN {db_connection_info['schema']}.paradigms p on l.paradigm_id = p.id
 JOIN {db_connection_info['schema']}.entries e on l.entry_id = e.id
 JOIN {db_connection_info['schema']}.senses s on l.entry_id = s.entry_id
-WHERE s.synset_id <> 0 and NOT l.hidden and NOT s.hidden and NOT e.hidden and
-    (lt.name = 'default' or lt.name = 'alternativeSpelling' or lt.name = 'abbreviation')
+WHERE s.synset_id <> 0
+      and (NOT l.hidden or l.reason_for_hiding='not-public')
+      and (NOT s.hidden or s.reason_for_hiding='not-public')
+      and (NOT e.hidden or e.reason_for_hiding='not-public') and
+      (lt.name = 'default' or lt.name = 'alternativeSpelling' or lt.name = 'abbreviation')
 GROUP BY l.id, paradigm, p_pos, p_abbr_type, entry_hk
 ORDER BY l.lemma ASC
 """
