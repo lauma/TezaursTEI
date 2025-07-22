@@ -98,7 +98,7 @@ class TEIWriter(XMLWriter):
             self.do_simple_leaf_node('title', {'type': 'sub'}, 'Appendix: Wordforms')
 
         #if dictionary == 'tezaurs' or dictionary == 'mlvv' or dictionary == 'llvv' or dictionary == 'ltg':
-        if editors:
+        if editors and not dictionary.endswith('_wordforms'):
             self.do_simple_leaf_node('editor', {}, editors)
         self.end_node('titleStmt')
 
