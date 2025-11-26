@@ -2,6 +2,7 @@
 *.xml
 *.ispell
 *.json
+*.jsonl
 *.log
 *-ignore.bat
 

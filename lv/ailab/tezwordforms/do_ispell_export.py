@@ -1,50 +1,48 @@
 #!/usr/bin/env python3
-from lv.ailab.tezwordforms.wordform_utils import LexemeProperties, WordformReader
+from lv.ailab.tezwordforms.wordform_utils import IspellFilter, WordformReader
 import json
 import sys
 import warnings
 
-warn_multiple_influrls = True
-warn_multiple_inflsets = False
+warn_multiple_inflsets = True
+skip_multiple_inflsets = True
+# Šobrīd vairāki locījumu komplekti ir tikai gadījumos, kad saīsinājumu kļūdaini sadala divās
+# tekstvienībās, tāpēc labāk ir tos visus izlaist. Šis jāmaina, kad salabos saīsinājumus.
 
-lexeme_properties_path = "influrl-to-lexdata.json"
-wordform_list_path = "inflection-export.json"
+wordform_list_path = "inflections.jsonl"
 dict_version = "tezaurs_00_0"
 
 if len(sys.argv) > 1:
     dict_version = sys.argv[1]
 if len(sys.argv) > 2:
     wordform_list_path = sys.argv[2]
-if len(sys.argv) > 3:
-    lexeme_properties_path = sys.argv[3]
 
-lexeme_properties = LexemeProperties(lexeme_properties_path)
 wordform_source = WordformReader(wordform_list_path)
-
+ispell_filter = IspellFilter()
 ispell_forms = {}
 
 for infl_json in wordform_source.process_line_by_line():
     if not infl_json or len(infl_json) < 1:
         continue
-    if warn_multiple_influrls and len(infl_json) != 1:
-        warnings.warn("Following wordform JSON doesn't have exactly one key: " + json.dumps(infl_json, ensure_ascii=False))
-    infl_url = next(iter(infl_json))
-    if lexeme_properties.lexeme_good_for_spelling(infl_url):
-        if warn_multiple_inflsets and len(infl_json[infl_url]) != 1:
+
+    if ispell_filter.lexeme_good_for_spelling(infl_json):
+        if warn_multiple_inflsets and len(infl_json['inflectedForms']) != 1:
             warnings.warn("Following wordform JSON doesn't have exactly one set of inflections: " + json.dumps(infl_json, ensure_ascii=False))
-        infl_set = next(iter(infl_json[infl_url]))
-        for form in infl_set:
-            if lexeme_properties.form_good_for_spelling(form):
-                try:
-                    ispell_forms[form["Vārds"]] = 1
-                except KeyError as e:
-                    warnings.warn(f'Missing key "Vārds" for {infl_url} in {json.dumps(form, ensure_ascii=False)}')
+        if skip_multiple_inflsets and len(infl_json['inflectedForms']) != 1:
+            continue
+        for infl_set in infl_json['inflectedForms']:
+            for form in infl_set:
+                if ispell_filter.form_good_for_spelling(form):
                     try:
-                        ispell_forms[form["V\uFFFD\uFFFDrds"]] = 1
-                        print ('FFFD workaround for ispell successfull')
-                    except KeyError:
+                        ispell_forms[form["Vārds"]] = 1
+                    except KeyError as e:
+                        warnings.warn(f'Missing key "Vārds" in {json.dumps(form, ensure_ascii=False)}')
+                        try:
+                            ispell_forms[form["V\uFFFD\uFFFDrds"]] = 1
+                            print ('FFFD workaround for ispell successfull')
+                        except KeyError:
+                            continue
                         continue
-                    continue
 
 ispell_filename = f'{dict_version}.ispell'
 ispell_output = open(ispell_filename, 'w', encoding='utf8')

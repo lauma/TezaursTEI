@@ -335,7 +335,9 @@ class TEIWriter(XMLWriter):
             self.end_node(wraper_elem_name)
 
     # TODO piesaistīt karoga anglisko nosaukumu
-    def print_flags(self, flags, ignored_flags=[]):
+    def print_flags(self, flags, ignored_flags=None):
+        if ignored_flags is None:
+            ignored_flags = []
         if not flags:
             return
         self.start_node('gramGrp', {'type': 'properties'})

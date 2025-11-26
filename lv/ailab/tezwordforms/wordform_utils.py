@@ -3,7 +3,7 @@ import warnings
 import regex
 
 
-class LexemeProperties:
+class IspellFilter:
 
     ispell_omit_lexeme_flags = {
         "Valodas normēšana": ["Nevēlams"],
@@ -19,9 +19,9 @@ class LexemeProperties:
     }
     ispell_omit_paradigms = ["foreign", "number", "punct", "residual"]
 
-    def __init__(self, lexeme_properties_path):
-        with open(lexeme_properties_path, 'r', encoding='utf8') as file:
-            self.property_map = json.load(file)
+    #def __init__(self, lexeme_properties_path):
+    #    with open(lexeme_properties_path, 'r', encoding='utf8') as file:
+    #        self.property_map = json.load(file)
 
     @staticmethod
     def _flags_match_omit(flags, criteria):
@@ -39,22 +39,19 @@ class LexemeProperties:
 
     # Checks if at least one of the lexemes associated with the given inflection path
     # matches the criteria for being included in spellchecker output (not regional, rude, etc.)
-    def lexeme_good_for_spelling(self, inflection_path):
-        if not inflection_path in self.property_map:
+    def lexeme_good_for_spelling(self, inflection_json):
+        #if not inflection_path in self.property_map:
+        #    return False
+        #properties_list = self.property_map[inflection_path]
+        #if len(properties_list) < 1:
+        #    return False
+        #for property_set in properties_list:
+        #    is_good = True
+        if inflection_json["paradigm"] in self.ispell_omit_paradigms:
             return False
-        properties_list = self.property_map[inflection_path]
-        if len(properties_list) < 1:
-            return False
-        for property_set in properties_list:
-            is_good = True
-            if property_set["paradigm"] in self.ispell_omit_paradigms:
-                # is_good = False
-                continue
-            if "flags" in property_set:
-                is_good = not self._flags_match_omit(property_set["flags"], self.ispell_omit_lexeme_flags)
-            if is_good:
-                return True
-        return False
+        if "flags" in inflection_json:
+            return not self._flags_match_omit(inflection_json["flags"], self.ispell_omit_lexeme_flags)
+        return True
 
     def form_good_for_spelling(self, form_property_map):
         bad = self._flags_match_omit(form_property_map, self.ispell_omit_form_flags) \
@@ -120,7 +117,8 @@ class WordformReader:
                         continue
             if not regex.search("^\s*[\[\]]?\s*$", line):
                 try:
-                    json_result = json.loads("{" + line.rstrip(", \n\r") + "}")
+                    # json_result = json.loads("{" + line.rstrip(", \n\r") + "}")
+                    json_result = json.loads(line)
                 except ValueError as e:
                     warnings.warn(f"Following was not parsed into JSON: {line}")
                     self.bad_lines.append(line)
