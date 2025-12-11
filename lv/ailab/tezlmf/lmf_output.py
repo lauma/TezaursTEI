@@ -18,13 +18,13 @@ class LMFWriter(XMLWriter):
         self.start_node('Lexicon', {'id': self.wordnet_id,
                                     'label': 'Latvian Wordnet',
                                     'language': 'lv',
-                                    'email': 'peteris@ailab.lv',
-                                    'license': 'https://creativecommons.org/licenses/by-nc/4.0/',
+                                    'email': 'laura@ailab.lv',
+                                    'license': 'https://creativecommons.org/licenses/by-sa/4.0/',
                                     'version': wordnet_vers,
                                     'url': 'https://wordnet.ailab.lv/',
                                     'citation': 'Peteris Paikens, Agute Klints, Ilze Lokmane, Lauma Pretkalniņa, Laura '
                                                 + 'Rituma, Madara Stāde and Laine Strankale. Latvian WordNet. '
-                                                + 'Proceedings of Global Wordnet Conference, 2023.',
+                                                + 'Proceedings of Global Wordnet Conference, 2023. DOI: 10.18653/v1/2023.gwc-1.23',
                                     'logo': 'https://wordnet.ailab.lv/images/mazais-logo-ailab.svg'})
 
     def print_tail(self):
