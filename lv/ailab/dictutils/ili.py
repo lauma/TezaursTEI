@@ -4,6 +4,7 @@ import regex
 class IliMapping:
     #mapping_file = ''
 
+    # ILI maping should come from https://github.com/globalwordnet/cili/
     def __init__(self, path='config/ili-map-pwn30.tab'):
         self.mapping_file = path
         self.mapping = {}
