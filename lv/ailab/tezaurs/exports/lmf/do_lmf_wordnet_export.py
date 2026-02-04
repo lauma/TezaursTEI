@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-from lv.ailab.tezdb.connection import db_connect
-from lv.ailab.tezdb.db_config import db_connection_info
+from lv.ailab.tezaurs.dbaccess.connection import db_connect
+from lv.ailab.tezaurs.dbaccess.db_config import db_connection_info
 
 import sys
 
-from lv.ailab.tezdb.overview_querries import fetch_all_synsets, fetch_all_synseted_lexemes, get_dict_version
-from lv.ailab.tezdb.single_sinset_queries import fetch_synset_senses, fetch_synset_lexemes, fetch_synset_relations, \
+from lv.ailab.tezaurs.dbaccess.overview_querries import fetch_all_synsets, fetch_all_synseted_lexemes, get_dict_version
+from lv.ailab.tezaurs.dbaccess.single_synset_queries import fetch_synset_senses, fetch_synset_lexemes, fetch_synset_relations, \
     fetch_exteral_synset_eq_relations
-from lv.ailab.tezdb.subentry_queries import fetch_synseted_senses_by_lexeme
-from lv.ailab.dictutils.ili import IliMapping
-from lv.ailab.tezlmf.lmf_output import LMFWriter
+from lv.ailab.tezaurs.dbaccess.subentry_queries import fetch_synseted_senses_by_lexeme
+from lv.ailab.tezaurs.utils.dict.ili import IliMapping
+from lv.ailab.tezaurs.exports.lmf.lmf_output import LMFWriter
 
 # TODO: izrunas, LMF POS no tēzaura vārdšķiras
 wordnet_id = 'wordnet_lv'

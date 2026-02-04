@@ -1,7 +1,7 @@
 from psycopg2.extras import NamedTupleCursor
 
-from lv.ailab.tezdb.db_config import db_connection_info
-from lv.ailab.tezdb.subentry_queries import fetch_examples
+from lv.ailab.tezaurs.dbaccess.db_config import db_connection_info
+from lv.ailab.tezaurs.dbaccess.subentry_queries import fetch_examples
 
 
 def fetch_synset_senses(connection, synset_id):

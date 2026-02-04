@@ -7,7 +7,7 @@
 *-ignore.bat
 
 # DB config with password
-/lv/ailab/tezdb/db_config.py
+/lv/ailab/tezaurs/dbaccess/db_config.py
 
 #MacOS stuff
 .DS_Store

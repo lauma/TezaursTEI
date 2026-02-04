@@ -1,7 +1,7 @@
-from lv.ailab.tezdb.db_config import db_connection_info
-from lv.ailab.tezdb.query_uttils import extract_gram, extract_paradigm_stems
-from lv.ailab.tezdb.single_entry_queries import fetch_lexemes, fetch_senses, fetch_examples, fetch_morpho_derivs
-from lv.ailab.tezdb.subentry_queries import fetch_sources_by_esl_id
+from lv.ailab.tezaurs.dbaccess.db_config import db_connection_info
+from lv.ailab.tezaurs.dbaccess.query_uttils import extract_gram, extract_paradigm_stems
+from lv.ailab.tezaurs.dbaccess.single_entry_queries import fetch_lexemes, fetch_senses, fetch_examples, fetch_morpho_derivs
+from lv.ailab.tezaurs.dbaccess.subentry_queries import fetch_sources_by_esl_id
 
 from psycopg2.extras import NamedTupleCursor
 

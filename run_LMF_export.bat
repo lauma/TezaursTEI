@@ -1,6 +1,6 @@
 REM Exporting Wordnet LMF from dictionary.
-python -m lv.ailab.tezlmf.do_lmf_wordnet_export tezaurs_current
-::python -m lv.ailab.tezlmf.do_lmf_wordnet_export tezaurs_dv
+python -m lv.ailab.tezaurs.exports.lmf.do_lmf_wordnet_export tezaurs_current
+::python -m lv.ailab.tezaurs.exports.lmf.do_lmf_wordnet_export tezaurs_dv
 
 REM Validation.
 ::python -m wn validate tezaurs_current_lmf.xml

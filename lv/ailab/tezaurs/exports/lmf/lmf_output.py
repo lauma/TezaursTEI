@@ -1,6 +1,6 @@
-from lv.ailab.dictutils.gloss_normalization import full_cleanup
-from lv.ailab.tezdb.query_uttils import lmfiy_pos, extract_paradigm_text
-from lv.ailab.xmlutils.writer import XMLWriter
+from lv.ailab.tezaurs.utils.dict.gloss_normalization import full_cleanup
+from lv.ailab.tezaurs.dbaccess.query_uttils import lmfiy_pos, extract_paradigm_text
+from lv.ailab.tezaurs.utils.xml.writer import XMLWriter
 
 
 class LMFWriter(XMLWriter):

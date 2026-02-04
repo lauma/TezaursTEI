@@ -1,5 +1,5 @@
 from psycopg2.extras import NamedTupleCursor
-from lv.ailab.tezdb.db_config import db_connection_info
+from lv.ailab.tezaurs.dbaccess.db_config import db_connection_info
 
 
 def fetch_examples(connection, parent_id, entry_level_samples=False):

@@ -1,7 +1,7 @@
-from lv.ailab.dictutils.gloss_normalization import mandatory_normalization, full_cleanup
-from lv.ailab.dictutils.pron_normalization import prettify_pronunciation, prettify_text_with_pronunciation
-from lv.ailab.tezdb.query_uttils import extract_paradigm_text
-from lv.ailab.xmlutils.writer import XMLWriter
+from lv.ailab.tezaurs.utils.dict.gloss_normalization import mandatory_normalization, full_cleanup
+from lv.ailab.tezaurs.utils.dict.pron_normalization import prettify_pronunciation, prettify_text_with_pronunciation
+from lv.ailab.tezaurs.dbaccess.query_uttils import extract_paradigm_text
+from lv.ailab.tezaurs.utils.xml.writer import XMLWriter
 import regex
 
 

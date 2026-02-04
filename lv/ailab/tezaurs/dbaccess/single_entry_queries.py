@@ -1,11 +1,11 @@
 import regex
 from psycopg2.extras import NamedTupleCursor
 
-from lv.ailab.tezdb.db_config import db_connection_info
-from lv.ailab.tezdb.query_uttils import extract_gram
-from lv.ailab.tezdb.single_sinset_queries import fetch_synset_senses, fetch_synset_relations, fetch_gradset, \
+from lv.ailab.tezaurs.dbaccess.db_config import db_connection_info
+from lv.ailab.tezaurs.dbaccess.query_uttils import extract_gram
+from lv.ailab.tezaurs.dbaccess.single_synset_queries import fetch_synset_senses, fetch_synset_relations, fetch_gradset, \
     fetch_exteral_synset_eq_relations, fetch_exteral_synset_neq_relations
-from lv.ailab.tezdb.subentry_queries import fetch_examples, fetch_gloss_entry_links, fetch_gloss_sense_links, \
+from lv.ailab.tezaurs.dbaccess.subentry_queries import fetch_examples, fetch_gloss_entry_links, fetch_gloss_sense_links, \
     fetch_sources_by_esl_id, fetch_semantic_derivs_by_sense
 
 

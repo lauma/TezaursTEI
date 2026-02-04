@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-from lv.ailab.tezdb.connection import db_connect
-from lv.ailab.tezdb.db_config import db_connection_info
-from lv.ailab.tezdb.overview_querries import get_dict_version, fetch_all_paradigms
-from lv.ailab.tezdb.query_uttils import combine_inhereted_flags
-from lv.ailab.teztei.tei_output import TEIWriter
-from lv.ailab.tezwordforms.wordform_utils import WordformReader, IspellFilter
+from lv.ailab.tezaurs.dbaccess.connection import db_connect
+from lv.ailab.tezaurs.dbaccess.db_config import db_connection_info
+from lv.ailab.tezaurs.dbaccess.overview_querries import get_dict_version, fetch_all_paradigms
+from lv.ailab.tezaurs.dbaccess.query_uttils import combine_inhereted_flags
+from lv.ailab.tezaurs.exports.tei.tei_output import TEIWriter
+from lv.ailab.tezaurs.exports.wordforms.wordform_utils import WordformReader
 import json
 import sys
 import warnings

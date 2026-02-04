@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-from lv.ailab.dictutils.ili import IliMapping
-from lv.ailab.tezdb.connection import db_connect
-from lv.ailab.tezdb.db_config import db_connection_info
-from lv.ailab.tezdb.overview_querries import fetch_all_entries, get_dict_version, fetch_all_sources
-from lv.ailab.teztei.tei_output import TEIWriter
-from lv.ailab.teztei.whitelist import EntryWhitelist
+from lv.ailab.tezaurs.utils.dict.ili import IliMapping
+from lv.ailab.tezaurs.dbaccess.connection import db_connect
+from lv.ailab.tezaurs.dbaccess.db_config import db_connection_info
+from lv.ailab.tezaurs.dbaccess.overview_querries import fetch_all_entries, get_dict_version, fetch_all_sources
+from lv.ailab.tezaurs.exports.tei.tei_output import TEIWriter
+from lv.ailab.tezaurs.exports.tei.whitelist import EntryWhitelist
 import sys
 
 
