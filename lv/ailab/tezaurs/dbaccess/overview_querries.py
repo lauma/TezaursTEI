@@ -7,8 +7,6 @@ from psycopg2.extras import NamedTupleCursor
 
 
 # TODO paprasīt P un sataisīt smukāk kveriju veidošanu.
-
-# TODO
 def get_dict_version(connection):
     cursor = connection.cursor(cursor_factory=NamedTupleCursor)
     sql_dict_properties = f"""
@@ -132,10 +130,10 @@ LEFT JOIN {db_connection_info['schema']}.paradigms p on l.paradigm_id = p.id
 JOIN {db_connection_info['schema']}.entries e on l.entry_id = e.id
 JOIN {db_connection_info['schema']}.senses s on l.entry_id = s.entry_id
 WHERE s.synset_id <> 0
-      and (NOT l.hidden or l.reason_for_hiding='not-public')
-      and (NOT s.hidden or s.reason_for_hiding='not-public')
-      and (NOT e.hidden or e.reason_for_hiding='not-public') and
-      (lt.name = 'default' or lt.name = 'alternativeSpelling' or lt.name = 'abbreviation')
+      AND (NOT l.hidden OR l.reason_for_hiding='not-public')
+      AND (NOT s.hidden OR s.reason_for_hiding='not-public')
+      AND (NOT e.hidden OR e.reason_for_hiding='not-public') 
+      AND (lt.name = 'default' OR lt.name = 'alternativeSpelling' OR lt.name = 'abbreviation')
 GROUP BY l.id, paradigm, p_pos, p_abbr_type, entry_hk
 ORDER BY l.lemma ASC
 """
@@ -194,3 +192,40 @@ ORDER BY human_key ASC
         result[p.paradigm] = p.flags
 
     return result
+
+def fetch_all_lexemes_with_paradigms(connection):
+    cursor = connection.cursor(cursor_factory=NamedTupleCursor)
+    sql_lexemes = f"""
+SELECT DISTINCT
+	l.lemma, p.human_key,
+	CASE WHEN l.data->'Gram'->'Flags'->>'Vārdšķira' IS NULL
+		THEN p.data->>'Vārdšķira'
+		ELSE l.data->'Gram'->'Flags'->>'Vārdšķira'
+	END AS true_pos,
+	p.data->>'Vārdšķira' AS paradigm_pos,
+	l.data->'Gram'->'Flags'->'Leksēmas pamatformas īpatnības' AS lemma_properties,
+	stem1, stem2, stem3
+FROM {db_connection_info['schema']}.lexemes l
+JOIN {db_connection_info['schema']}.paradigms p ON l.paradigm_id = p.id 
+JOIN {db_connection_info['schema']}.entries e ON l.entry_id = e.id 
+WHERE (NOT l.hidden OR l.reason_for_hiding='not-public')
+    AND (NOT e.hidden OR e.reason_for_hiding='not-public') 
+ORDER BY l.lemma, p.human_key 
+"""
+    cursor.execute(sql_lexemes)
+    counter = 0
+    while True:
+        rows = cursor.fetchmany(1000)
+        if not rows:
+            break
+        for row in rows:
+            counter = counter + 1
+            result = {'lemma': row.lemma, 'paradigm': row.human_key, 'pos': row.true_pos,
+                      'changed_pos': row.true_pos != row.paradigm_pos,
+                      'stem1': row.stem1, 'stem2': row.stem2, 'stem3': row.stem3}
+            if row.lemma_properties:
+                result['irregular_lemma'] = row.lemma_properties
+
+            yield result
+        print(f'lexemes: {counter}\r')
+

@@ -5,6 +5,7 @@
 *.jsonl
 *.log
 *-ignore.bat
+*.gf
 
 # DB config with password
 /lv/ailab/tezaurs/dbaccess/db_config.py
