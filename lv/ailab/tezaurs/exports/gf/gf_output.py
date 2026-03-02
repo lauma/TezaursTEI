@@ -16,25 +16,17 @@ class GFConcreteWriter:
         self.out.write(f'concrete {module_name} of {abs_module_name} = CatLav ** open ResLav, PortedMorphoParadigmsLav in {{\n')
         self.out.write('\n')
         self.out.write('flags\n')
-        self.out.write(f'{GFUtils.INDENT}optimize=values ;\n')
+        self.out.write(f'{GFUtils.INDENT}optimize = values ;\n')
         self.out.write(f'{GFUtils.INDENT}coding = utf8 ;\n')
         self.out.write('\n')
 
-    def print_normal_lexeme(self, lemma, paradigm, postfix=None, synsets=None):
-        self._print_lexeme('Lemma', lemma, paradigm, postfix, synsets)
 
-    def print_plural_lexeme(self, lemma, paradigm, postfix=None, synsets=None):
-        self._print_lexeme('NomPl', lemma, paradigm, postfix, synsets)
+    def print_lexeme(self, lemma, postfix, expression, synset_string=None):
+        self.out.write(f'lin \'{lemma}_{postfix}\' = {expression} ;')
+        if synset_string:
+            self.out.write(synset_string)
+        self.out.write('\n')
 
-    def _print_lexeme(self, gf_tail, lemma, paradigm, postfix=None, synsets=None):
-        if postfix is None:
-            postfix = paradigm
-        gf_paradigm = GFUtils.normalize_for_gf(paradigm)
-        gf_postfix = GFUtils.normalize_for_gf(postfix)
-        self.out.write(f'lin \'{lemma}_{gf_postfix}\' = {gf_paradigm}_from{gf_tail} "{lemma}"')
-        #if len(synsets) > 0:
-        #    self.out.write(f'{GFWriter.INDENT * 3}-- {", ".join(synsets)}')
-        self.out.write(' ;\n')
 
     def print_tail(self):
         self.out.write('}\n')
@@ -55,10 +47,13 @@ class GFAbstractWriter:
         self.out.write('flags coding = utf8 ;\n')
         self.out.write('\n')
 
-    def print_lexeme(self, lemma, pos, postfix):
+    def print_lexeme(self, lemma, postfix, pos, synset_string=None):
         gf_postfix = GFUtils.normalize_for_gf(postfix)
 
-        self.out.write(f'fun \'{lemma}_{gf_postfix}\' : {pos} ; \n')
+        self.out.write(f'fun \'{lemma}_{gf_postfix}\' : {pos} ;')
+        if synset_string:
+            self.out.write(synset_string)
+        self.out.write('\n')
 
 
     def print_tail(self):

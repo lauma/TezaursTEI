@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from lv.ailab.tezaurs.exports.wordforms.wordform_utils import IspellFilter, WordformReader
+from lv.ailab.tezaurs.exports.wordforms.json_wordform_utils import IspellFilter, WordformReader
 import json
 import sys
 import warnings

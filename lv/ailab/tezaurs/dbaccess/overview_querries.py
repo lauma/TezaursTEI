@@ -1,7 +1,11 @@
+from functools import reduce
+
 from lv.ailab.tezaurs.dbaccess.db_config import db_connection_info
-from lv.ailab.tezaurs.dbaccess.query_uttils import extract_gram, extract_paradigm_stems
+from lv.ailab.tezaurs.dbaccess.query_uttils import extract_gram, extract_paradigm_stems, combine_inherited_flags
 from lv.ailab.tezaurs.dbaccess.single_entry_queries import fetch_lexemes, fetch_senses, fetch_examples, fetch_morpho_derivs
-from lv.ailab.tezaurs.dbaccess.subentry_queries import fetch_sources_by_esl_id
+from lv.ailab.tezaurs.dbaccess.single_synset_queries import fetch_exteral_synset_eq_relations
+from lv.ailab.tezaurs.dbaccess.subentry_queries import fetch_sources_by_esl_id, fetch_wordforms, \
+    fetch_synseted_senses_by_lexeme
 
 from psycopg2.extras import NamedTupleCursor
 
@@ -190,20 +194,19 @@ ORDER BY human_key ASC
     paradigm_data = cursor.fetchall()
     for p in paradigm_data:
         result[p.paradigm] = p.flags
-
     return result
 
-def fetch_all_lexemes_with_paradigms(connection):
+
+def fetch_all_lexemes_with_paradigms_and_synsets(connection):
     cursor = connection.cursor(cursor_factory=NamedTupleCursor)
     sql_lexemes = f"""
-SELECT DISTINCT
-	l.lemma, p.human_key,
+SELECT l.id, l.lemma, p.human_key,
 	CASE WHEN l.data->'Gram'->'Flags'->>'Vārdšķira' IS NULL
 		THEN p.data->>'Vārdšķira'
 		ELSE l.data->'Gram'->'Flags'->>'Vārdšķira'
 	END AS true_pos,
 	p.data->>'Vārdšķira' AS paradigm_pos,
-	l.data->'Gram'->'Flags'->'Leksēmas pamatformas īpatnības' AS lemma_properties,
+	l.data->'Gram'->'Flags' as flags, p.data as paradigm_flags,
 	stem1, stem2, stem3
 FROM {db_connection_info['schema']}.lexemes l
 JOIN {db_connection_info['schema']}.paradigms p ON l.paradigm_id = p.id 
@@ -220,12 +223,20 @@ ORDER BY l.lemma, p.human_key
             break
         for row in rows:
             counter = counter + 1
-            result = {'lemma': row.lemma, 'paradigm': row.human_key, 'pos': row.true_pos,
-                      'changed_pos': row.true_pos != row.paradigm_pos,
-                      'stem1': row.stem1, 'stem2': row.stem2, 'stem3': row.stem3}
-            if row.lemma_properties:
-                result['irregular_lemma'] = row.lemma_properties
-
+            result = {'id': row.id, 'lemma': row.lemma, 'paradigm': row.human_key,
+                      'pos': row.true_pos, 'changed_pos': row.true_pos != row.paradigm_pos,
+                      'combined_flags': combine_inherited_flags(row.flags, row.paradigm_flags),
+                      'stem1': row.stem1, 'stem2': row.stem2, 'stem3': row.stem3,
+                      'wordforms': fetch_wordforms(connection, row.id)}
+            synset_senses = fetch_synseted_senses_by_lexeme(connection, row.id)
+            synset_ids = set(map(lambda a: a['synset_id'] if 'synset_id' in a else {},
+                               synset_senses)) if synset_senses else {}
+            external_synset_ids = set(map(lambda a: a['id'], reduce(
+                lambda a, b: a + b,
+                map(lambda a: fetch_exteral_synset_eq_relations(connection, a), synset_ids),
+                [])))
+            result['synsets'] = synset_ids
+            result['external_synsets'] = external_synset_ids
             yield result
         print(f'lexemes: {counter}\r')
 

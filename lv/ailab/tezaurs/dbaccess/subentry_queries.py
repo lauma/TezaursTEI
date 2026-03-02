@@ -30,6 +30,25 @@ ORDER BY hidden, order_no
     return result
 
 
+def fetch_wordforms(connection, lexeme_id):
+    if not lexeme_id:
+        return
+    cursor = connection.cursor(cursor_factory=NamedTupleCursor)
+    sql_wordforms = f"""
+SELECT id, form, data->'Gram'->'Flags' as flags, replaces_base
+FROM dict.wordforms
+WHERE lexeme_id = {lexeme_id}
+"""
+    cursor.execute(sql_wordforms)
+    wordforms = cursor.fetchall()
+    if not wordforms:
+        return
+    result = []
+    for wf in wordforms:
+        result.append({'form': wf.form, 'flags': wf.flags, 'replaces_base': wf.replaces_base})
+    return result
+
+
 def fetch_gloss_entry_links(connection, sense_id):
     if not sense_id:
         return

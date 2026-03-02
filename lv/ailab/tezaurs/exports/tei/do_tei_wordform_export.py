@@ -2,9 +2,9 @@
 from lv.ailab.tezaurs.dbaccess.connection import db_connect
 from lv.ailab.tezaurs.dbaccess.db_config import db_connection_info
 from lv.ailab.tezaurs.dbaccess.overview_querries import get_dict_version, fetch_all_paradigms
-from lv.ailab.tezaurs.dbaccess.query_uttils import combine_inhereted_flags
+from lv.ailab.tezaurs.dbaccess.query_uttils import combine_inherited_flags
 from lv.ailab.tezaurs.exports.tei.tei_output import TEIWriter
-from lv.ailab.tezaurs.exports.wordforms.wordform_utils import WordformReader
+from lv.ailab.tezaurs.exports.wordforms.json_wordform_utils import WordformReader
 import json
 import sys
 import warnings
@@ -59,7 +59,7 @@ with open(filename, 'w', encoding='utf8') as out:
             lexeme_flags = {}
             if 'flags' in infl_json:
                 lexeme_flags = infl_json['flags']
-            flags = combine_inhereted_flags(lexeme_flags, paradigms[infl_json['paradigm']],
+            flags = combine_inherited_flags(lexeme_flags, paradigms[infl_json['paradigm']],
                                             {'Stems', 'Morfotabulas tips', 'Paradigmas īpatnības'})
             tei_printer.print_wordform_set_entry(
                 infl_json['entry_id'], infl_json['lexeme_id'], infl_json['lemma'], flags, infl_set)

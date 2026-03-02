@@ -28,7 +28,7 @@ def extract_gram(element, omit_flags={}):
             paradigm_flags = element.paradigm_data
     except AttributeError:
         pass
-    combined_flags = combine_inhereted_flags(lexeme_flags, paradigm_flags, omit_flags)
+    combined_flags = combine_inherited_flags(lexeme_flags, paradigm_flags, omit_flags)
     if combined_flags:
         result['flags'] = combined_flags
 
@@ -53,7 +53,10 @@ def extract_gram(element, omit_flags={}):
 
     return result
 
-def combine_inhereted_flags(lexeme_flags, paradigm_flags, omit_paradigm_flags={}):
+
+def combine_inherited_flags(lexeme_flags, paradigm_flags, omit_paradigm_flags=None):
+    if omit_paradigm_flags is None:
+        omit_paradigm_flags = {}
     result = {}
     # General flag/property processing
     if lexeme_flags:
@@ -124,3 +127,4 @@ def extract_paradigm_text(paradigm_data):
         if 'stem_past' in paradigm_data:
             paradigm_text = paradigm_text + paradigm_data['stem_past']
     return paradigm_text
+
