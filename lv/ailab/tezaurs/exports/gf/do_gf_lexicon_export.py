@@ -6,7 +6,7 @@ import sys
 
 from lv.ailab.tezaurs.exports.gf.gf_output import GFConcreteWriter, GFAbstractWriter
 from lv.ailab.tezaurs.exports.gf.gf_utils import GFUtils
-from lv.ailab.tezaurs.utils.dict.db_wordform_utils import filter_wordforms
+from lv.ailab.tezaurs.utils.dict.morpho_constants import MorphoVal, MorphoAttr
 
 connection = None
 dbname = None
@@ -17,78 +17,79 @@ implemented_paradigms = {
 			"noun-5ma", "noun-5mb", "noun-6a", "noun-6b",
 }
 
+# Initialize DB
 if len(sys.argv) > 1:
     dbname = sys.argv[1]
 if dbname:
     db_connection_info['dbname'] = dbname
 else:
     dbname = db_connection_info['dbname']
-
 connection = db_connect()
 dict_version_data = get_dict_version(connection)
 dict_version = dict_version_data['tag']
 dict_lang = 'Ltg' if dict_version_data['dictionary'] == 'ltg' else 'Lav'
 
+# Initialize both GF files (concrete and abstract), print their headers.
 module_name_abs = f'PortedTezaursDict{dict_lang}Abs'
 gf_abs_printer = GFAbstractWriter(f'{module_name_abs}.gf')
 gf_abs_printer.print_head(module_name_abs, dict_version)
-
 module_name_conc = f'PortedTezaursDict{dict_lang}'
 gf_conc_printer = GFConcreteWriter(f'{module_name_conc}.gf')
 gf_conc_printer.print_head(module_name_conc, module_name_abs, dict_version)
 
+# To avoid duplicates in resulting GF, we first process all lexemes and store
+# them in this map variable (indexed by resulting concrete grammar expression and GF
+# category/POS). Only after all lexemes are processed, we do the writing in
+# the GF output files.
 result_lexemes_by_concrete = {}
-
-# Currently only noun processing. Must be updated for other POS, when structure becomes clearer.
 for lexeme in fetch_all_lexemes_with_paradigms_and_synsets(connection):
-    gf_pos = None
+    # Currently only noun processing. Must be updated for other POS, when structure becomes clearer.
     if lexeme['paradigm'] not in implemented_paradigms:
         continue
     if lexeme['changed_pos']:
         print(f'Skipping {lexeme["lemma"]} because of pos!')
         continue
-    else:
-        gf_pos = 'N'
-        # TODO other POS, use LP and one for place names
-    # TODO better treatment for plurale tantum
+    gf_pos = GFUtils.get_GF_pos(lexeme)
+    # TODO: other POS
+    # TODO for nouns:
+    #  - better treatment for plurale tantum?
+    #  - correct gender for "ļaudis"
 
     conc_expr = None
 
     lemma_irregs = []\
-        if 'combined_flags' not in lexeme or 'Leksēmas pamatformas īpatnības' not in lexeme['combined_flags']\
-        else lexeme['combined_flags']['Leksēmas pamatformas īpatnības']
-    if len(lemma_irregs) < 1:
+        if 'combined_flags' not in lexeme or MorphoAttr.LEMMA_WEIRDNESS not in lexeme['combined_flags']\
+        else lexeme['combined_flags'][MorphoAttr.LEMMA_WEIRDNESS]
+
+    if len(lemma_irregs) < 1 or len(lemma_irregs) == 1 and MorphoVal.SINGULAR in lemma_irregs:
+        # Standart nouns
         conc_expr = GFUtils.form_concrete_lex_expr('Lemma', lexeme['lemma'], lexeme['paradigm'])
-    elif len(lemma_irregs) == 1 and 'Vienskaitlis' in lemma_irregs:
-        # Currently singular only nouns do not have special treatment,
-        # but if need be, this is the place to do it.
-        conc_expr = GFUtils.form_concrete_lex_expr('Lemma', lexeme['lemma'], lexeme['paradigm'])
-    elif len(lemma_irregs) == 1 and 'Daudzskaitlis' in lemma_irregs:
+        if gf_pos == 'LN':
+            # Special processing for place names
+            conc_expr = GFUtils.form_LN_singular(conc_expr)
+    elif len(lemma_irregs) == 1 and MorphoVal.PLURAL in lemma_irregs:
+        # Standart nouns
         conc_expr = GFUtils.form_concrete_lex_expr('NomPl', lexeme['lemma'], lexeme['paradigm'])
+        if gf_pos == 'LN':
+            # Special processing for place names
+            conc_expr = GFUtils.form_LN_plural(conc_expr)
+
+    # Currently we don't know what to do with other lemma cases.
     else:
         print(f'Skipping {lexeme["lemma"]} because of lemma type {lemma_irregs}!')
         continue
 
-    # TODO Cēsīm nav vienskaitļa
-
+    # Here we add custom vocatives
     if 'wordforms' in lexeme and lexeme['wordforms'] and len(lexeme['wordforms']) > 0:
-        sg_voc_wfs, leftover_wordforms = filter_wordforms(
-            lexeme['wordforms'], {"Skaitlis": "Vienskaitlis", "Locījums": "Vokatīvs"})
-        pl_voc_wfs, leftover_wordforms = filter_wordforms(
-            leftover_wordforms, {"Skaitlis": "Daudzskaitlis", "Locījums": "Vokatīvs"})
-
-        extended_gf_table = GFUtils.form_table_with_vocative_extension(sg_voc_wfs, pl_voc_wfs)
-
-        if not extended_gf_table or leftover_wordforms and len(leftover_wordforms) > 0:
-            print(f'Skipping {lexeme["lemma"]} because additional wordforms are not all vocatives!')
+        if gf_pos != "N":
+            print(f'Skipping {lexeme["lemma"]} because don\'t know, how to add vocatives to {gf_pos} type!')
             continue
-        # Here we form something like this:
-        # let bro = noun_2a_fromLemma "brālis" in {
-        #   s = table { Sg => bro.s ! Sg ** variants{ "brāl" ; bro.s ! Sg ! Voc } ;
-        #     Pl => bro.s ! Pl ** { Voc => "brāļi" } } ;
-        #   gend = bro.gend } ;
-        conc_expr = f"let {GFUtils.DEFAULT_LET_VARIABLE} = {conc_expr} in {{ s = {extended_gf_table} ; gend = {GFUtils.DEFAULT_LET_VARIABLE}.gend }}"
+        voc_expr = GFUtils.form_N_with_vocative_extension(lexeme, conc_expr)
+        if not voc_expr:
+            continue
+        conc_expr = voc_expr
 
+    # If we have actually managed to get a concrete expression, then we add it to the great data structure for printing
     if conc_expr:
         result_entry = result_lexemes_by_concrete[(conc_expr, gf_pos)]\
             if (conc_expr, gf_pos) in result_lexemes_by_concrete\
@@ -98,6 +99,7 @@ for lexeme in fetch_all_lexemes_with_paradigms_and_synsets(connection):
         result_entry['synsets'].update(lexeme['external_synsets'])
         result_lexemes_by_concrete[(conc_expr, gf_pos)] = result_entry
 
+# Finally we print all the processed lexemes to output...
 for (conc_expr, gf_pos) in result_lexemes_by_concrete.keys():
     gf_lexeme_data = result_lexemes_by_concrete[(conc_expr, gf_pos)]
     variable_postfix = GFUtils.BIG_SEPARATOR.join(str(id) for id in sorted(gf_lexeme_data['ids']))
@@ -111,5 +113,6 @@ for (conc_expr, gf_pos) in result_lexemes_by_concrete.keys():
     gf_abs_printer.print_lexeme(list(gf_lexeme_data['lemmas'])[0], variable_postfix, gf_pos, synset_comment)
     gf_conc_printer.print_lexeme(list(gf_lexeme_data['lemmas'])[0], variable_postfix, conc_expr, synset_comment)
 
+# ... And finish the GF files with appropriate endings.
 gf_abs_printer.print_tail()
 gf_conc_printer.print_tail()

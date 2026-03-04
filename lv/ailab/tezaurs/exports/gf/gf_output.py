@@ -13,6 +13,13 @@ class GFConcreteWriter:
         self.out.write('-- NB: Do NOT edit this without consulting lauma@ailab.lv or normundsg@ailab.lv\n')
         self.out.write('--     Otherwise your changes might get accidentally revoked!\n')
         self.out.write('\n')
+        self.out.write('-- TODO and missing (compared to full Tēzaurs)\n')
+        self.out.write('-- Nouns:\n')
+        self.out.write('--   - Nouns with nonstandard forms any other than vocatives (vecāmāte, dievs)\n')
+        self.out.write('--   - Nouns with other gender than paradigm\'s default (ļaudis) \n')
+        self.out.write('-- Anything not noun:\n')
+        self.out.write('--   - Everything :) \n')
+        self.out.write('\n')
         self.out.write(f'concrete {module_name} of {abs_module_name} = CatLav ** open ResLav, PortedMorphoParadigmsLav in {{\n')
         self.out.write('\n')
         self.out.write('flags\n')
@@ -48,7 +55,7 @@ class GFAbstractWriter:
         self.out.write('\n')
 
     def print_lexeme(self, lemma, postfix, pos, synset_string=None):
-        gf_postfix = GFUtils.normalize_for_gf(postfix)
+        gf_postfix = GFUtils.normalize_for_GF(postfix)
 
         self.out.write(f'fun \'{lemma}_{gf_postfix}\' : {pos} ;')
         if synset_string:

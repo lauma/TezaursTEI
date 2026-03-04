@@ -225,6 +225,7 @@ ORDER BY l.lemma, p.human_key
             counter = counter + 1
             result = {'id': row.id, 'lemma': row.lemma, 'paradigm': row.human_key,
                       'pos': row.true_pos, 'changed_pos': row.true_pos != row.paradigm_pos,
+                      'paradigm_flags': row.paradigm_flags,
                       'combined_flags': combine_inherited_flags(row.flags, row.paradigm_flags),
                       'stem1': row.stem1, 'stem2': row.stem2, 'stem3': row.stem3,
                       'wordforms': fetch_wordforms(connection, row.id)}
