@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
+from lv.ailab.tezaurs.dbobjects.entries import Entry
 from lv.ailab.tezaurs.utils.dict.ili import IliMapping
 from lv.ailab.tezaurs.dbaccess.connection import db_connect
 from lv.ailab.tezaurs.dbaccess.db_config import db_connection_info
-from lv.ailab.tezaurs.dbaccess.overview_querries import fetch_all_entries, get_dict_version, fetch_all_sources
+from lv.ailab.tezaurs.dbaccess.overview_querries import get_dict_version, fetch_all_sources
 from lv.ailab.tezaurs.exports.tei.tei_output import TEIWriter
 from lv.ailab.tezaurs.exports.tei.whitelist import EntryWhitelist
 import sys
@@ -57,7 +58,7 @@ with open(filename, 'w', encoding='utf8') as out:
         dict_version_data['year'], dict_version_data['month'],
         dict_version_data['url'], dict_version_data['copyright_en'])
     try:
-        for entry in fetch_all_entries(connection, omit_mwe, omit_wordparts, omit_pot_wordparts, do_entrylevel_exmples):
+        for entry in Entry.fetch_all_entries(connection, omit_mwe, omit_wordparts, omit_pot_wordparts, do_entrylevel_exmples):
             tei_printer.print_entry(entry, ili_map)
     except BaseException as err:
         print("Entry was: " + tei_printer.debug_entry_id)

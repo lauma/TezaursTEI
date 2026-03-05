@@ -1,21 +1,5 @@
 def extract_gram(element, omit_flags={}):
     result = {}
-    # Legacy POS logic to be substituted with general flag processing
-    # if element.paradigm_data and 'Vārdšķira' in element.paradigm_data:
-    #    result['pos'] = [element.paradigm_data['Vārdšķira']]
-    #    if 'Reziduāļa tips' in element.paradigm_data:
-    #        result['pos'].append(element.paradigm_data['Reziduāļa tips'])
-    # if element.data and 'Gram' in element.data:
-    #    gram = element.data['Gram']
-    #    if 'Flags' in gram and 'Kategorija' in gram['Flags'] and gram['Flags']['Kategorija']:
-    #        result['pos'] = gram['Flags']['Kategorija']
-    #    if 'Flags' in gram and 'Citi' in gram['Flags'] and 'Neviennozīmīga vārdšķira vai kategorija' in \
-    #            gram['Flags']['Citi']:
-    #        result['pos'] = []
-    #    if 'FlagText' in gram and db_connection_info['schema'] != 'tezaurs':
-    #        result['pos_text'] = gram['FlagText']
-    #    if 'FreeText' in gram and db_connection_info['schema'] != 'tezaurs':
-    #        result['pos_text'] = gram['FreeText']
 
     # General flag/property processing
     lexeme_flags = {}

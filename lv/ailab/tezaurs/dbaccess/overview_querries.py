@@ -1,16 +1,13 @@
 from functools import reduce
 
 from lv.ailab.tezaurs.dbaccess.db_config import db_connection_info
-from lv.ailab.tezaurs.dbaccess.query_uttils import extract_gram, extract_paradigm_stems, combine_inherited_flags
-from lv.ailab.tezaurs.dbaccess.single_entry_queries import fetch_lexemes, fetch_senses, fetch_examples, fetch_morpho_derivs
+from lv.ailab.tezaurs.dbaccess.query_uttils import extract_paradigm_stems, combine_inherited_flags
 from lv.ailab.tezaurs.dbaccess.single_synset_queries import fetch_exteral_synset_eq_relations
-from lv.ailab.tezaurs.dbaccess.subentry_queries import fetch_sources_by_esl_id, fetch_wordforms, \
-    fetch_synseted_senses_by_lexeme
+from lv.ailab.tezaurs.dbaccess.subentry_queries import fetch_wordforms, fetch_synseted_senses_by_lexeme
 
 from psycopg2.extras import NamedTupleCursor
 
 
-# TODO paprasīt P un sataisīt smukāk kveriju veidošanu.
 def get_dict_version(connection):
     cursor = connection.cursor(cursor_factory=NamedTupleCursor)
     sql_dict_properties = f"""
@@ -53,70 +50,6 @@ def fetch_all_sources(connection):
             break
         for row in rows:
             yield {'abbr': row.abbr, 'title': row.title, 'url': row.url}
-
-
-def fetch_all_entries(connection, omit_mwe=False, omit_wordparts=False, omit_pot_wordparts=False,
-                      do_entrylevel_exmples=False):
-    cursor = connection.cursor(cursor_factory=NamedTupleCursor)
-    where_clause = ""
-    if omit_mwe or omit_wordparts:
-        where_clause = """et.name = 'word'"""
-        if not omit_wordparts:
-            where_clause = where_clause + """ or et.name = 'wordPart'"""
-        if not omit_mwe:
-            where_clause = where_clause + """ or et.name = 'mwe'"""
-        where_clause = '(' + where_clause + ')' + " and"
-    sql_entries = f"""
-SELECT e.id, type_id, name as type_name, heading, human_key, homonym_no,
-    primary_lexeme_id, e.data->>'Etymology' as etym, e.data as data, e.hidden
-FROM {db_connection_info['schema']}.entries e
-JOIN {db_connection_info['schema']}.entry_types et ON e.type_id = et.id
-WHERE {where_clause} (NOT e.hidden or e.reason_for_hiding='not-public')
-ORDER BY type_id, heading, homonym_no
-"""
-    cursor.execute(sql_entries)
-    counter = 0
-    while True:
-        rows = cursor.fetchmany(1000)
-        if not rows:
-            break
-        for row in rows:
-            counter = counter + 1
-            result = {'id': row.human_key, 'hom_id': row.homonym_no, 'type': row.type_name,
-                      'headword': row.heading, 'hidden': row.hidden}
-            if row.etym:
-                result['etym'] = row.etym
-            gram_dict = extract_gram(row, None)
-            result.update(gram_dict)
-
-            lexemes = fetch_lexemes(connection, row.id, row.primary_lexeme_id)
-            if lexemes:
-                result['lexemes'] = lexemes
-            # primary_lexeme = fetch_main_lexeme(connection, row.primary_lexeme_id, row.human_key)
-            primary_lexeme = lexemes[0]
-            if not primary_lexeme:
-                continue
-            if omit_pot_wordparts and \
-                    (row.type_name == 'wordPart' or primary_lexeme['lemma'].startswith('-') or
-                     primary_lexeme['lemma'].endswith('-')):
-                continue
-            # prim_lex = {'lemma': primary_lexeme.lemma}
-            # result['mainLexeme'] = prim_lex
-            senses = fetch_senses(connection, row.id)
-            if senses:
-                result['senses'] = senses
-            if do_entrylevel_exmples:
-                examples = fetch_examples(connection, row.id, True)
-                if examples:
-                    result['examples'] = examples
-            sources = fetch_sources_by_esl_id(connection, row.id, None, None)
-            if sources:
-                result['sources'] = sources
-            morpho_derivs = fetch_morpho_derivs(connection, row.id)
-            if morpho_derivs:
-                result['morpho_derivs'] = morpho_derivs
-            yield result
-        print(f'entries: {counter}\r')
 
 
 def fetch_all_synseted_lexemes(connection):

@@ -210,50 +210,50 @@ class TEIWriter(XMLWriter):
     # TODO: sakārtot, lai drukā ar jauno leksēmu drukāšanas funkciju un visas leksēmas
     def print_entry(self, entry, ili_map=None):
         # if self.whitelist is not None and not self.whitelist.check(entry['mainLexeme']['lemma'], entry['hom_id']):
-        if self.whitelist is not None and not self.whitelist.check(entry['headword'], entry['hom_id']):
+        if self.whitelist is not None and not self.whitelist.check(entry.headword, entry.homonym):
             return
-        self.debug_entry_id = entry['id']
-        entry_id = f'{self.dict_version}/{entry["id"]}'
-        entry_params = {'id': entry_id, 'sortKey': entry['headword']}
-        main_lexeme = entry['lexemes'][0]
-        if entry['hom_id'] > 0:
-            entry_params['n'] = str(entry['hom_id'])
-        if entry['type'] == 'mwe' or entry['type'] == 'MWE':
-            entry_params['type'] = 'mwe'
-        elif main_lexeme['lemma'] and 'pos' in entry and 'Vārda daļa' in main_lexeme['pos'] or \
-                entry['type'] == 'wordPart':
-            entry_params['type'] = 'affix'  # FIXME
-        elif main_lexeme['lemma'] and 'pos' in entry and 'Saīsinājums' in main_lexeme['pos'] or \
+        self.debug_entry_id = entry.dbId
+        entry_id = f'{self.dict_version}/{entry.dbId}'
+        entry_params_xml = {'id': entry_id, 'sortKey': entry.headword}
+        main_lexeme = entry.lexemes[0]
+        if entry.homonym > 0:
+            entry_params_xml['n'] = str(entry.homonym)
+        if entry.type == 'mwe' or entry.type == 'MWE':
+            entry_params_xml['type'] = 'mwe'
+        elif main_lexeme['lemma'] and 'pos' in main_lexeme and 'Vārda daļa' in main_lexeme['pos'] or \
+                entry.type == 'wordPart':
+            entry_params_xml['type'] = 'affix'  # FIXME
+        elif main_lexeme['lemma'] and 'pos' in main_lexeme and 'Saīsinājums' in main_lexeme['pos'] or \
                 'paradigm' in main_lexeme and main_lexeme['paradigm']['id'] == 'abbr':
-            entry_params['type'] = 'abbr'
-        elif main_lexeme['lemma'] and 'pos' in entry and 'Vārds svešvalodā' in main_lexeme['pos'] or \
+            entry_params_xml['type'] = 'abbr'
+        elif main_lexeme['lemma'] and 'pos' in main_lexeme and 'Vārds svešvalodā' in main_lexeme['pos'] or \
                 'paradigm' in main_lexeme and main_lexeme['paradigm']['id'] == 'foreign':
-            entry_params['type'] = 'foreign'
+            entry_params_xml['type'] = 'foreign'
         else:
-            entry_params['type'] = 'main'
-        if entry['hidden']:
-            entry_params['rend'] = 'hidden'
-        self.start_node('entry', entry_params)
+            entry_params_xml['type'] = 'main'
+        if entry.hidden:
+            entry_params_xml['rend'] = 'hidden'
+        self.start_node('entry', entry_params_xml)
         # FIXME homonīmi
         # self.print_lexeme(entry['mainLexeme'], entry['headword'], True)
         is_first = True
-        self.print_gram(entry)
-        for lexeme in entry['lexemes']:
-            self.print_lexeme(lexeme, f'{self.dict_version}/{entry["id"]}', entry['headword'], entry['type'], is_first)
+        self.print_gram(entry.gram)
+        for lexeme in entry.lexemes:
+            self.print_lexeme(lexeme, f'{self.dict_version}/{entry.dbId}', entry.headword, entry.type, is_first)
             is_first = False
-        if 'senses' in entry:
-            for sense in entry['senses']:
-                self.print_sense(sense, f'{self.dict_version}/{entry["id"]}', ili_map)
-        if 'examples' in entry:
-            for example in entry['examples']:
+        if entry.senses:
+            for sense in entry.senses:
+                self.print_sense(sense, f'{self.dict_version}/{entry.dbId}', ili_map)
+        if entry.examples:
+            for example in entry.examples:
                 self.print_example(example)
-        if 'etym' in entry:
-            self._do_smart_leaf_node('etym', {}, mandatory_normalization(entry['etym']))
-        if 'morpho_derivs' in entry:
-            for deriv in entry['morpho_derivs']:
+        if entry.etymology:
+            self._do_smart_leaf_node('etym', {}, mandatory_normalization(entry.etymology))
+        if entry.morphoDerivatives:
+            for deriv in entry.morphoDerivatives:
                 self.print_morpho_deriv(deriv)
-        if 'sources' in entry:
-            self.print_esl_sources(entry['sources'])
+        if entry.sources:
+            self.print_esl_sources(entry.sources)
         self.end_node('entry')
 
     def print_lexeme(self, lexeme, id_stub, headword, entry_type, is_main=False):
@@ -283,7 +283,6 @@ class TEIWriter(XMLWriter):
         self.end_node('form')
 
     def print_gram(self, parent, wraper_elem_name=None):
-        # if 'pos' not in parent and 'flags' not in parent and 'struct_restr' not in parent and \
         if 'flags' not in parent and 'struct_restr' not in parent and \
                 'free_text' not in parent and 'infl_text' not in parent:
             return
@@ -303,20 +302,6 @@ class TEIWriter(XMLWriter):
         # TODO: kā labāk - celms kā karogs vai paradigmas daļa?
         if 'paradigm' in parent:
             paradigm_text = extract_paradigm_text(parent['paradigm'])
-            # paradigm_text = parent['paradigm']['id']
-            # if 'stem_inf' in parent['paradigm'] or 'stem_pres' in parent['paradigm'] \
-            #        or 'stem_past' in parent['paradigm']:
-            #    paradigm_text = paradigm_text + ':'
-            #    if 'stem_inf' in parent['paradigm']:
-            #        paradigm_text = paradigm_text + parent['paradigm']['stem_inf'] + ';'
-            #    else:
-            #        paradigm_text = paradigm_text + ';'
-            #    if 'stem_pres' in parent['paradigm']:
-            #        paradigm_text = paradigm_text + parent['paradigm']['stem_pres'] + ';'
-            #    else:
-            #        paradigm_text = paradigm_text + ';'
-            #    if 'stem_past' in parent['paradigm']:
-            #        paradigm_text = paradigm_text + parent['paradigm']['stem_past']
 
             self.do_simple_leaf_node('iType', {'type': 'computational', 'corresp': '#MORPHO'}, paradigm_text)
         elif 'infl_text' in parent:
