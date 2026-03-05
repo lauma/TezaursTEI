@@ -3,6 +3,8 @@ class MorphoAttr:
 
     NUMBER = "Skaitlis"
 
+    GENDER = "Dzimte"
+
     CASE = "Locījums"
 
     NOUN_TYPE = "Lietvārda tips"
@@ -16,6 +18,9 @@ class MorphoVal:
 
     SINGULAR = "Vienskaitlis"
     PLURAL = "Daudzskaitlis"
+
+    MASCULINE = "Vīriešu"
+    FEMININE = "Sieviešu"
 
     VOCATIVE = "Vokatīvs"
 

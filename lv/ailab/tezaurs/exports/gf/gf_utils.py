@@ -10,6 +10,8 @@ class GFUtils:
     GF_NUMBER_SINGULAR = 'Sg'
     GF_NUMBER_PLURAL = 'Pl'
     GF_CASE_VOCATIVE = 'Voc'
+    GF_GEND_MASCULINE = 'Masc'
+    GF_GEND_FEMININE = 'Fem'
 
     DEFAULT_GF_POS = {
         MorphoVal.NOUN: "N",
@@ -26,6 +28,15 @@ class GFUtils:
                 and lexeme['combined_flags'][MorphoAttr.PNOUN_TYPE] == MorphoVal.PLACE_NAME):
             result = 'LN'
         return result
+
+
+    # TODO aizstāt šo ar tagset XML nolasīšanu
+    @staticmethod
+    def get_GF_gender(gender):
+        match gender:
+            case MorphoVal.MASCULINE: return GFUtils.GF_GEND_MASCULINE
+            case MorphoVal.FEMININE: return GFUtils.GF_GEND_FEMININE
+            case _: return None
 
 
     @staticmethod
@@ -93,7 +104,7 @@ class GFUtils:
     #     Pl => bro.s ! Pl ** { Voc => "brāļi" } } ;
     #   gend = bro.gend } ;
     @staticmethod
-    def form_N_with_vocative_extension(lexeme, paradigm_expr):
+    def form_N_with_vocative_extension(lexeme, paradigm_expr, gender=None):
         if 'wordforms' not in lexeme or not lexeme['wordforms'] or len(lexeme['wordforms']) < 1:
             return None
         sg_voc_wfs, leftover_wordforms = filter_wordforms(
@@ -106,21 +117,27 @@ class GFUtils:
         if not extended_gf_table or leftover_wordforms and len(leftover_wordforms) > 0:
             print(f'Skipping {lexeme["lemma"]} because additional wordforms are not all vocatives!')
             return None
+        gf_gend = gender if gender else f"{GFUtils.DEFAULT_LET_VARIABLE}.gend"
+        return f"let {GFUtils.DEFAULT_LET_VARIABLE} = {paradigm_expr} in {{ s = {extended_gf_table} ; gend = {gf_gend} }}"
 
-        return f"let {GFUtils.DEFAULT_LET_VARIABLE} = {paradigm_expr} in {{ s = {extended_gf_table} ; gend = {GFUtils.DEFAULT_LET_VARIABLE}.gend }}"
+
+    @staticmethod
+    def form_N_with_changed_gender(paradigm_expr, gender):
+        return f"let {GFUtils.DEFAULT_LET_VARIABLE} = {paradigm_expr} in {{ s = {GFUtils.DEFAULT_LET_VARIABLE}.s ; gend = {gender} }}"
 
 
     @staticmethod
     # Result is something like `let l = noun_6b_fromNomPl "Cēsis" in { s = l.s ! Pl ; gend = l.gend ; num = Pl }`
-    def _form_LN(paradigm_expr, number):
-        return f"let {GFUtils.DEFAULT_LET_VARIABLE} = {paradigm_expr} in {{ s = {GFUtils.DEFAULT_LET_VARIABLE}.s ! {number} ; gend = {GFUtils.DEFAULT_LET_VARIABLE}.gend ; num = {number} }}"
+    def _form_LN(paradigm_expr, number, gender=None):
+        gf_gend = gender if gender else f"{GFUtils.DEFAULT_LET_VARIABLE}.gend"
+        return f"let {GFUtils.DEFAULT_LET_VARIABLE} = {paradigm_expr} in {{ s = {GFUtils.DEFAULT_LET_VARIABLE}.s ! {number} ; gend = {gf_gend} ; num = {number} }}"
 
 
     @staticmethod
-    def form_LN_plural(paradim_expr):
-        return GFUtils._form_LN(paradim_expr, GFUtils.GF_NUMBER_PLURAL)
+    def form_LN_plural(paradim_expr, gender=None):
+        return GFUtils._form_LN(paradim_expr, GFUtils.GF_NUMBER_PLURAL, gender)
 
 
     @staticmethod
-    def form_LN_singular(paradim_expr):
-        return GFUtils._form_LN(paradim_expr, GFUtils.GF_NUMBER_SINGULAR)
+    def form_LN_singular(paradim_expr, gender=None):
+        return GFUtils._form_LN(paradim_expr, GFUtils.GF_NUMBER_SINGULAR, gender)

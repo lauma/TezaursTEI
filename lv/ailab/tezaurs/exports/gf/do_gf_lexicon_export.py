@@ -56,6 +56,11 @@ for lexeme in fetch_all_lexemes_with_paradigms_and_synsets(connection):
     #  - correct gender for "ļaudis"
 
     conc_expr = None
+    gender = None
+    if 'combined_flags' in lexeme and MorphoAttr.GENDER in lexeme['combined_flags']\
+            and 'paradigm_flags' in lexeme and MorphoAttr.GENDER in lexeme['paradigm_flags']\
+            and lexeme['combined_flags'][MorphoAttr.GENDER] != lexeme['paradigm_flags'][MorphoAttr.GENDER]:
+        gender = GFUtils.get_GF_gender(lexeme['combined_flags'][MorphoAttr.GENDER])
 
     lemma_irregs = []\
         if 'combined_flags' not in lexeme or MorphoAttr.LEMMA_WEIRDNESS not in lexeme['combined_flags']\
@@ -66,13 +71,13 @@ for lexeme in fetch_all_lexemes_with_paradigms_and_synsets(connection):
         conc_expr = GFUtils.form_concrete_lex_expr('Lemma', lexeme['lemma'], lexeme['paradigm'])
         if gf_pos == 'LN':
             # Special processing for place names
-            conc_expr = GFUtils.form_LN_singular(conc_expr)
+            conc_expr = GFUtils.form_LN_singular(conc_expr, gender)
     elif len(lemma_irregs) == 1 and MorphoVal.PLURAL in lemma_irregs:
         # Standart nouns
         conc_expr = GFUtils.form_concrete_lex_expr('NomPl', lexeme['lemma'], lexeme['paradigm'])
         if gf_pos == 'LN':
             # Special processing for place names
-            conc_expr = GFUtils.form_LN_plural(conc_expr)
+            conc_expr = GFUtils.form_LN_plural(conc_expr, gender)
 
     # Currently we don't know what to do with other lemma cases.
     else:
@@ -84,10 +89,12 @@ for lexeme in fetch_all_lexemes_with_paradigms_and_synsets(connection):
         if gf_pos != "N":
             print(f'Skipping {lexeme["lemma"]} because don\'t know, how to add vocatives to {gf_pos} type!')
             continue
-        voc_expr = GFUtils.form_N_with_vocative_extension(lexeme, conc_expr)
+        voc_expr = GFUtils.form_N_with_vocative_extension(lexeme, conc_expr, gender)
         if not voc_expr:
             continue
         conc_expr = voc_expr
+    elif gender and gf_pos != "LN":
+        conc_expr = GFUtils.form_N_with_changed_gender(conc_expr, gender)
 
     # If we have actually managed to get a concrete expression, then we add it to the great data structure for printing
     if conc_expr:
