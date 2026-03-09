@@ -1,11 +1,10 @@
 from functools import reduce
+from psycopg2.extras import NamedTupleCursor
 
 from lv.ailab.tezaurs.dbaccess.db_config import db_connection_info
 from lv.ailab.tezaurs.dbaccess.query_uttils import extract_paradigm_stems, combine_inherited_flags
 from lv.ailab.tezaurs.dbaccess.single_synset_queries import fetch_exteral_synset_eq_relations
 from lv.ailab.tezaurs.dbaccess.subentry_queries import fetch_wordforms, fetch_synseted_senses_by_lexeme
-
-from psycopg2.extras import NamedTupleCursor
 
 
 def get_dict_version(connection):
@@ -94,26 +93,6 @@ ORDER BY l.lemma ASC
             yield result
         print(f'lexemes: {counter}\r')
 
-
-def fetch_all_synsets(connection):
-    cursor = connection.cursor(cursor_factory=NamedTupleCursor)
-    sql_synset = f"""
-SELECT syn.id
-FROM {db_connection_info['schema']}.synsets as syn
-JOIN {db_connection_info['schema']}.senses as s ON syn.id = s.synset_id
-GROUP BY syn.id
-ORDER BY id ASC
-"""
-    cursor.execute(sql_synset)
-    counter = 0
-    while True:
-        rows = cursor.fetchmany(1000)
-        if not rows:
-            break
-        for row in rows:
-            counter = counter + 1
-            yield row.id
-        print(f'synsets: {counter}\r')
 
 def fetch_all_paradigms(connection):
     result = {}

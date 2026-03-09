@@ -4,10 +4,10 @@ from lv.ailab.tezaurs.dbaccess.db_config import db_connection_info
 
 import sys
 
-from lv.ailab.tezaurs.dbaccess.overview_querries import fetch_all_synsets, fetch_all_synseted_lexemes, get_dict_version
-from lv.ailab.tezaurs.dbaccess.single_synset_queries import fetch_synset_senses, fetch_synset_lexemes, fetch_synset_relations, \
-    fetch_exteral_synset_eq_relations
+from lv.ailab.tezaurs.dbaccess.overview_querries import fetch_all_synseted_lexemes, get_dict_version
+from lv.ailab.tezaurs.dbaccess.single_synset_queries import fetch_synset_lexemes
 from lv.ailab.tezaurs.dbaccess.subentry_queries import fetch_synseted_senses_by_lexeme
+from lv.ailab.tezaurs.dbobjects.senses import Synset
 from lv.ailab.tezaurs.utils.dict.ili import IliMapping
 from lv.ailab.tezaurs.exports.lmf.lmf_output import LMFWriter
 
@@ -39,19 +39,16 @@ with open(filename, 'w', encoding='utf8') as f:
             synset_senses = fetch_synseted_senses_by_lexeme(connection, lexeme['id'])
             lmf_printer.print_lexeme(lexeme, synset_senses, print_tags)
     except BaseException as err:
-        print("Lexeme was: " + lmf_printer.debug_id)
+        print(f"Lexeme was: {lmf_printer.debug_id}")
         raise
     try:
-        for synset_id in fetch_all_synsets(connection):
-            synset_senses = fetch_synset_senses(connection, synset_id)
-            synset_lexemes = fetch_synset_lexemes(connection, synset_id)
-            relations = fetch_synset_relations(connection, synset_id)
-            omw_relations = fetch_exteral_synset_eq_relations(connection, synset_id, 'pwn-3.0')
+        for synset in Synset.fetch_all_synsets(connection, 'pwn-3.0'):
+            synset_lexemes = fetch_synset_lexemes(connection, synset.dbId)
             # Drukās netukšos sinsetus, šobrīd tas nozīmē, ka vajag definīciju un leksēmu.
-            if synset_senses and synset_lexemes:
-                lmf_printer.print_synset(synset_id, synset_senses, synset_lexemes, relations, omw_relations, ili)
+            if synset.senses and len(synset.senses) > 0 and synset_lexemes:
+                lmf_printer.print_synset(synset, synset_lexemes, ili)
     except BaseException as err:
-        print("Synset was: " + lmf_printer.debug_id)
+        print(f"Synset was: {lmf_printer.debug_id}")
         raise
     lmf_printer.print_tail()
 print(f'Done! Output written to {filename}')

@@ -1,4 +1,7 @@
+from lv.ailab.tezaurs.dbobjects.entries import Entry
+from lv.ailab.tezaurs.dbobjects.senses import Synset, Sense
 from lv.ailab.tezaurs.utils.dict.gloss_normalization import mandatory_normalization, full_cleanup
+from lv.ailab.tezaurs.utils.dict.ili import IliMapping
 from lv.ailab.tezaurs.utils.dict.pron_normalization import prettify_pronunciation, prettify_text_with_pronunciation
 from lv.ailab.tezaurs.dbaccess.query_uttils import extract_paradigm_text
 from lv.ailab.tezaurs.utils.xml.writer import XMLWriter
@@ -208,32 +211,32 @@ class TEIWriter(XMLWriter):
         self.end_node('back')
 
     # TODO: sakārtot, lai drukā ar jauno leksēmu drukāšanas funkciju un visas leksēmas
-    def print_entry(self, entry, ili_map=None):
+    def print_entry(self, entry : Entry, ili_map : IliMapping = None):
         # if self.whitelist is not None and not self.whitelist.check(entry['mainLexeme']['lemma'], entry['hom_id']):
         if self.whitelist is not None and not self.whitelist.check(entry.headword, entry.homonym):
             return
         self.debug_entry_id = entry.dbId
         entry_id = f'{self.dict_version}/{entry.dbId}'
-        entry_params_xml = {'id': entry_id, 'sortKey': entry.headword}
+        entry_xml_attrs = {'id': entry_id, 'sortKey': entry.headword}
         main_lexeme = entry.lexemes[0]
         if entry.homonym > 0:
-            entry_params_xml['n'] = str(entry.homonym)
+            entry_xml_attrs['n'] = str(entry.homonym)
         if entry.type == 'mwe' or entry.type == 'MWE':
-            entry_params_xml['type'] = 'mwe'
+            entry_xml_attrs['type'] = 'mwe'
         elif main_lexeme['lemma'] and 'pos' in main_lexeme and 'Vārda daļa' in main_lexeme['pos'] or \
                 entry.type == 'wordPart':
-            entry_params_xml['type'] = 'affix'  # FIXME
+            entry_xml_attrs['type'] = 'affix'  # FIXME
         elif main_lexeme['lemma'] and 'pos' in main_lexeme and 'Saīsinājums' in main_lexeme['pos'] or \
                 'paradigm' in main_lexeme and main_lexeme['paradigm']['id'] == 'abbr':
-            entry_params_xml['type'] = 'abbr'
+            entry_xml_attrs['type'] = 'abbr'
         elif main_lexeme['lemma'] and 'pos' in main_lexeme and 'Vārds svešvalodā' in main_lexeme['pos'] or \
                 'paradigm' in main_lexeme and main_lexeme['paradigm']['id'] == 'foreign':
-            entry_params_xml['type'] = 'foreign'
+            entry_xml_attrs['type'] = 'foreign'
         else:
-            entry_params_xml['type'] = 'main'
+            entry_xml_attrs['type'] = 'main'
         if entry.hidden:
-            entry_params_xml['rend'] = 'hidden'
-        self.start_node('entry', entry_params_xml)
+            entry_xml_attrs['rend'] = 'hidden'
+        self.start_node('entry', entry_xml_attrs)
         # FIXME homonīmi
         # self.print_lexeme(entry['mainLexeme'], entry['headword'], True)
         is_first = True
@@ -360,33 +363,30 @@ class TEIWriter(XMLWriter):
                     self.do_simple_leaf_node('gram', {'type': 'languageMaterial'}, material)
             self.end_node('gramGrp')
 
-    def print_sense(self, sense, id_stub, ili_map):
-        sense_id = f'{id_stub}/{sense["ord"]}'
-        sense_ord = f'{sense["ord"]}'
-        sense_attr = {'id': sense_id, 'n': sense_ord}
-        if sense['hidden']:
-            sense_attr['rend'] = 'hidden'
-        self.start_node('sense', sense_attr)
-        self.print_gram(sense)
-        norm_gloss = mandatory_normalization(sense['gloss'])
-        self._do_smart_leaf_node('def', {}, norm_gloss, sense.get('ge_links'), sense.get('gs_links'))  # Jo var būt None
-        if 'synset_id' in sense:  # and 'synset_senses' in sense:
-
-            self.print_synset_related(sense['synset_id'], sense['synset_senses'], sense['synset_rels'],
-                                      sense['gradset'], sense['external_eq_rels'], ili_map, sense['external_neq_rels'])
-        if 'examples' in sense:
-            for example in sense['examples']:
+    def print_sense(self, sense : Sense, id_stub, ili_map : IliMapping):
+        sense_id = f'{id_stub}/{sense.orderNo}'
+        sense_xml_attrs = {'id': sense_id, 'n': f'{sense.orderNo}'}
+        if sense.hidden:
+            sense_xml_attrs['rend'] = 'hidden'
+        self.start_node('sense', sense_xml_attrs)
+        self.print_gram(sense.gram)
+        norm_gloss = mandatory_normalization(sense.gloss)
+        self._do_smart_leaf_node('def', {}, norm_gloss, sense.glossToEntryLinks, sense.glossToSenseLinks)
+        if sense.synset:
+            self.print_synset_related(sense.synset, ili_map)
+        if sense.examples:
+            for example in sense.examples:
                 self.print_example(example)
 
-        if 'sem_derivs' in sense:
-            for deriv in sense['sem_derivs']:
+        if sense.semanticDerivatives:
+            for deriv in sense.semanticDerivatives:
                 self.print_sem_deriv(deriv)
 
-        if 'sources' in sense:
-            self.print_esl_sources(sense['sources'])
+        if sense.sources:
+            self.print_esl_sources(sense.sources)
 
-        if 'subsenses' in sense:
-            for subsense in sense['subsenses']:
+        if sense.subsenses:
+            for subsense in sense.subsenses:
                 self.print_sense(subsense, sense_id, ili_map)
 
         self.end_node('sense')
@@ -450,52 +450,52 @@ class TEIWriter(XMLWriter):
         self.print_gram(morpho_deriv, 'desc')
         self.end_node('xr')
 
-    def print_synset_related(self, synset_id, synset_senses, synset_rels, gradset, external_eq_rels, ili_map, external_neq_rels):
-        if synset_senses:
-            self.start_node('xr', {'type': 'synset', 'id': f'{self.dict_version}/synset:{synset_id}'})
-            for synset_sense in synset_senses:
+    def print_synset_related(self, synset : Synset, ili_map : IliMapping):
+        if synset.senses:
+            self.start_node('xr', {'type': 'synset', 'id': f'{self.dict_version}/synset:{synset.dbId}'})
+            for sense in synset.senses:
                 # TODO use hard ids when those are fixed
-                self.do_simple_leaf_node('ref', {'type': 'synsetMember', 'target': f'{self.dict_version}/{synset_sense["softid"]}'})
-            if external_eq_rels:
+                self.do_simple_leaf_node('ref', {'type': 'synsetMember', 'target': f'{self.dict_version}/{sense.calculatedHumanId}'})
+            if synset.externalEqRelations:
                 pnw_id = None
-                for ext_rel in external_eq_rels:
-                    if ext_rel['type'] == 'pwn-3.0':
-                        pnw_id = ext_rel['id']
+                for relation in synset.externalEqRelations:
+                    if relation['type'] == 'pwn-3.0':
+                        pnw_id = relation['id']
                     self.do_simple_leaf_node(
-                        'ref', {'type': 'externalEqualent', 'subtype': ext_rel['desc'], 'target': ext_rel['id']})
+                        'ref', {'type': 'externalEqualent', 'subtype': relation['desc'], 'target': relation['id']})
 
                 if ili_map and pnw_id is not None:
                     ili = ili_map.get_mapping(pnw_id)
                     self.do_simple_leaf_node(
                         'ref', {'type': 'externalEqualent', 'subtype': 'Open Multilingual Wordnet', 'target': ili})
-            if external_neq_rels:
-                for ext_rel in external_neq_rels:
-                    scope = ext_rel['scope']
+            if synset.externalNeqRelations:
+                for relation in synset.externalNeqRelations:
+                    scope = relation['scope']
                     if scope.startswith('eq_has_'):
                         scope = scope[7:8].capitalize() + scope[8:]
                     self.do_simple_leaf_node(
-                        'ref', {'type': f'external{scope}', 'subtype': ext_rel['desc'], 'target': ext_rel['id']})
+                        'ref', {'type': f'external{scope}', 'subtype': relation['desc'], 'target': relation['id']})
 
             self.end_node('xr')
-        if synset_rels:
-            for synset_rel in synset_rels:
-                xr_attr = {'type': f'{synset_rel["relation"]}'}
-                if synset_rel['hidden']:
+        if synset.relations:
+            for relation in synset.relations:
+                xr_attr = {'type': f'{relation["relation"]}'}
+                if relation['hidden']:
                     xr_attr['rend'] = 'hidden'
                 self.start_node('xr', xr_attr)
-                self.do_simple_leaf_node('lbl', {'type': 'this'}, f'{synset_rel["my_role"]}')
-                self.do_simple_leaf_node('lbl', {'type': 'target'}, f'{synset_rel["target_role"]}')
-                self.do_simple_leaf_node('ref', {'target': f'{self.dict_version}/synset:{synset_rel["target_id"]}'})
+                self.do_simple_leaf_node('lbl', {'type': 'this'}, f'{relation["my_role"]}')
+                self.do_simple_leaf_node('lbl', {'type': 'target'}, f'{relation["target_role"]}')
+                self.do_simple_leaf_node('ref', {'target': f'{self.dict_version}/synset:{relation["target_id"]}'})
                 self.end_node('xr')
-        if gradset:
+        if synset.gradset:
             self.start_node('xr',
-                            {'type': 'gradationSet', 'id': f'{self.dict_version}/gradset:{gradset["gradset_id"]}'})
-            for synset in gradset['member_synsets']:
-                self.do_simple_leaf_node('ref', {'target': f'{self.dict_version}/synset:{synset}'})
+                            {'type': 'gradationSet', 'id': f'{self.dict_version}/gradset:{synset.gradset.dbId}'})
+            for other_synset in synset.gradset.memberIds:
+                self.do_simple_leaf_node('ref', {'target': f'{self.dict_version}/synset:{other_synset}'})
             self.end_node('xr')
-            if gradset['gradset_cat']:
+            if synset.gradset.category:
                 self.start_node('xr', {'type': 'gradationClass'})
-                self.do_simple_leaf_node('ref', {'target': f'{self.dict_version}/synset:{gradset["gradset_cat"]}'})
+                self.do_simple_leaf_node('ref', {'target': f'{self.dict_version}/synset:{synset.gradset.category}'})
                 self.end_node('xr')
 
     def print_wordform_set_entry(self, entry_id_no, lexeme_id_no, lemma, flags, formlist_from_json):

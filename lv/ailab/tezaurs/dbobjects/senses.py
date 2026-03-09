@@ -1,0 +1,202 @@
+from typing import Optional, Generator
+
+import regex
+from psycopg2.extras import NamedTupleCursor
+
+from lv.ailab.tezaurs.dbaccess.connection import DbConnection
+from lv.ailab.tezaurs.dbaccess.db_config import db_connection_info
+from lv.ailab.tezaurs.dbaccess.query_uttils import extract_gram
+from lv.ailab.tezaurs.dbaccess.single_synset_queries import fetch_synset_relations, \
+    fetch_exteral_synset_eq_relations, fetch_exteral_synset_neq_relations
+from lv.ailab.tezaurs.dbaccess.subentry_queries import fetch_gloss_entry_links, fetch_gloss_sense_links, fetch_examples, \
+    fetch_semantic_derivs_by_sense, fetch_sources_by_esl_id
+
+
+class Sense:
+    dbId : int
+    calculatedHumanId : str
+    orderNo : int
+    hidden : bool
+    gloss : str
+
+    synset : Synset = None
+    gram = None
+
+    examples = None
+    subsenses : list[Sense]
+    sources = None
+
+    semanticDerivatives = None
+    glossToEntryLinks = None
+    glossToSenseLinks = None
+
+
+    def __init__(self, db_id, ord_no, gloss, hidden):
+        self.dbId = db_id
+        self.orderNo = ord_no
+        self.gloss = gloss
+        self.hidden = hidden
+
+
+    @staticmethod
+    def fetch_senses(connection : DbConnection, entry_id : int, parent_sense_id : int = None)\
+            -> Optional[list[Sense]]:
+        if not entry_id:
+            return None
+        cursor = connection.cursor(cursor_factory=NamedTupleCursor)
+        parent_sense_clause = 'is NULL'
+        if parent_sense_id:
+            parent_sense_clause = f"""= {parent_sense_id}"""
+        sql_senses = f"""
+    SELECT id, gloss, order_no, parent_sense_id, synset_id, data, hidden
+    FROM {db_connection_info['schema']}.senses
+    WHERE entry_id = {entry_id} and parent_sense_id {parent_sense_clause} and (NOT hidden or reason_for_hiding='not-public')
+    ORDER BY order_no
+    """
+        cursor.execute(sql_senses)
+        senses = cursor.fetchall()
+        if not senses:
+            return None
+        result = []
+        for sense_data in senses:
+            sense = Sense(sense_data.id, sense_data.order_no, sense_data.gloss, sense_data.hidden)
+            sense.gram = extract_gram(sense_data, None)
+            if sense_data.synset_id:
+                sense.synset = Synset(
+                    sense_data.synset_id,
+                    Sense.fetch_synset_senses(connection, sense_data.synset_id),
+                    fetch_synset_relations(connection, sense_data.synset_id),
+                    Gradset.fetch_gradset(connection, sense_data.synset_id),
+                    fetch_exteral_synset_eq_relations(connection, sense_data.synset_id),
+                    fetch_exteral_synset_neq_relations(connection, sense_data.synset_id))
+            sense.subsenses = Sense.fetch_senses(connection, entry_id, sense_data.id)
+            sense.examples = fetch_examples(connection, sense_data.id)
+            sense.semanticDerivatives = fetch_semantic_derivs_by_sense(connection, sense_data.id)
+            sense.sources = fetch_sources_by_esl_id(connection, None, None, sense_data.id)
+
+            if regex.search(r'\[((?:\p{L}\p{M}*)+)\]\{e:\d+\}', sense_data.gloss):
+                sense.glossToEntryLinks = fetch_gloss_entry_links(connection, sense_data.id)
+            if regex.search(r'\[((?:\p{L}\p{M}*)+)\]\{s:\d+\}', sense_data.gloss):
+                sense.glossToSenseLinks = fetch_gloss_sense_links(connection, sense_data.id)
+
+            result.append(sense)
+        return result
+
+
+    @staticmethod
+    def fetch_synset_senses(connection : DbConnection, synset_id : int) -> Optional[list[Sense]]:
+        if not synset_id:
+            return None
+        cursor = connection.cursor(cursor_factory=NamedTupleCursor)
+        sql_synset_senses = f"""
+    SELECT syn.id, s.id as sense_id, s.order_no as sense_no, s.gloss as gloss, s.hidden,
+           sp.order_no as parent_sense_no, e.human_key as entry_hk
+    FROM {db_connection_info['schema']}.synsets syn
+    RIGHT OUTER JOIN dict.senses s ON syn.id = s.synset_id
+    LEFT OUTER JOIN dict.senses sp ON s.parent_sense_id = sp.id
+    JOIN {db_connection_info['schema']}.entries e ON s.entry_id = e.id
+    WHERE syn.id = {synset_id} and (NOT s.hidden or s.reason_for_hiding='not-public')
+    ORDER BY e.type_id, entry_hk
+    """
+        cursor.execute(sql_synset_senses)
+        synset_members = cursor.fetchall()
+        if not synset_members:
+            return None
+        result = []
+        for member in synset_members:
+            sense = Sense(member.sense_id, member.sense_no, member.gloss, member.hidden)
+            # sense_dict = {'hardid': member.sense_id, 'gloss': member.gloss, 'hidden': member.hidden}
+            if member.parent_sense_no:
+                # sense_dict['softid'] = f'{member.entry_hk}/{member.parent_sense_no}/{member.sense_no}'
+                sense.calculatedHumanId = f'{member.entry_hk}/{member.parent_sense_no}/{member.sense_no}'
+            else:
+                sense.calculatedHumanId = f'{member.entry_hk}/{member.sense_no}'
+            sense.examples = fetch_examples(connection, member.sense_id)
+            result.append(sense)
+        return result
+
+
+
+class Synset:
+    dbId : int
+    senses : list[Sense]
+    relations = None
+    gradset : Gradset
+    externalEqRelations = None
+    externalNeqRelations = None
+
+
+    def __init__ (self, db_id, senses, relations, gradset, ext_eq_rels, ext_neq_rels = None):
+        self.dbId = db_id
+        self.senses = senses
+        self.relations = relations
+        self.gradset = gradset
+        self.externalEqRelations = ext_eq_rels
+        self.externalNeqRelations = ext_neq_rels
+
+
+    @staticmethod
+    def fetch_all_synsets(connection : DbConnection, filter_ext_rel_by : str = None) -> Generator[Synset]:
+        cursor = connection.cursor(cursor_factory=NamedTupleCursor)
+        sql_synset = f"""
+    SELECT syn.id
+    FROM {db_connection_info['schema']}.synsets as syn
+    JOIN {db_connection_info['schema']}.senses as s ON syn.id = s.synset_id
+    GROUP BY syn.id
+    ORDER BY id ASC
+    """
+        cursor.execute(sql_synset)
+        counter = 0
+        while True:
+            rows = cursor.fetchmany(1000)
+            if not rows:
+                break
+            for row in rows:
+                counter = counter + 1
+                yield Synset (row.id,
+                              Sense.fetch_synset_senses(connection, row.id),
+                              fetch_synset_relations(connection, row.id),
+                              Gradset.fetch_gradset(connection, row.id),
+                              fetch_exteral_synset_eq_relations(connection, row.id, filter_ext_rel_by),
+                              fetch_exteral_synset_neq_relations(connection, row.id, filter_ext_rel_by))
+            print(f'synsets: {counter}\r')
+
+
+
+class Gradset:
+    dbId : int
+    category : str
+    memberIds : list[int]
+
+
+    def __init__(self, db_id, gradset_category, member_synsets):
+        self.dbId = db_id
+        self.category = gradset_category
+        self.memberIds = member_synsets
+
+
+    @staticmethod
+    def fetch_gradset(connection : DbConnection, member_synset_id : int) -> Optional[Gradset]:
+        if not member_synset_id:
+            return None
+
+        cursor = connection.cursor(cursor_factory=NamedTupleCursor)
+        sql_gradset = f"""
+    SELECT syn.id as synset_id, syn.gradset_id as gradset_id, grad.synset_id as gradset_cat
+    FROM  {db_connection_info['schema']}.synsets syn
+    JOIN {db_connection_info['schema']}.gradsets grad ON syn.gradset_id = grad.id
+    WHERE gradset_id = (
+        SELECT gradset_id
+        FROM {db_connection_info['schema']}.synsets
+        WHERE ID = {member_synset_id}) AND gradset_id is not null
+    ORDER BY syn.id
+    """
+        cursor.execute(sql_gradset)
+        gradet_members = cursor.fetchall()
+        if not gradet_members:
+            return None
+
+        result = Gradset(gradet_members[0].gradset_id, gradet_members[0].gradset_cat, [])
+        for member in gradet_members:
+            result.memberIds.append(member.synset_id)
+        return result

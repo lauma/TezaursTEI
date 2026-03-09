@@ -1,30 +1,33 @@
+from typing import Generator
+
 from psycopg2.extras import NamedTupleCursor
 
+from lv.ailab.tezaurs.dbaccess.connection import DbConnection
 from lv.ailab.tezaurs.dbaccess.db_config import db_connection_info
 from lv.ailab.tezaurs.dbaccess.query_uttils import extract_gram
-from lv.ailab.tezaurs.dbaccess.single_entry_queries import fetch_lexemes, fetch_senses, fetch_morpho_derivs
+from lv.ailab.tezaurs.dbaccess.single_entry_queries import fetch_lexemes, fetch_morpho_derivs
 from lv.ailab.tezaurs.dbaccess.subentry_queries import fetch_examples, fetch_sources_by_esl_id
+from lv.ailab.tezaurs.dbobjects.senses import Sense
 
 
 class Entry:
 
-    dbId = None
-    hidden = None
+    dbId : int
+    hidde: bool
 
-    homonym = None
+    homonym : int
     type = None
-    headword = None
-    etymology = None
+    headword : str
+    etymology : str = None
 
     gram = None
 
     lexemes = None
-    senses = None
+    senses : list[Sense] = None
     examples = None
     sources = None
 
     morphoDerivatives = None
-
 
     def __init__(self, db_id, homonym, entry_type, headword, hidden):
         self.dbId = db_id
@@ -34,8 +37,9 @@ class Entry:
         self.hidden = hidden
 
     @staticmethod
-    def fetch_all_entries(connection, omit_mwe=False, omit_wordparts=False, omit_pot_wordparts=False,
-                          do_entrylevel_exmples=False):
+    def fetch_all_entries(connection : DbConnection, omit_mwe : bool = False, omit_wordparts : bool = False,
+                          omit_pot_wordparts : bool = False,
+                          do_entrylevel_exmples : bool = False) -> Generator[Entry]:
         cursor = connection.cursor(cursor_factory=NamedTupleCursor)
         where_clause = ""
         if omit_mwe or omit_wordparts:
@@ -77,7 +81,7 @@ class Entry:
                         (row.type_name == 'wordPart' or primary_lexeme['lemma'].startswith('-') or
                          primary_lexeme['lemma'].endswith('-')):
                     continue
-                senses = fetch_senses(connection, row.id)
+                senses = Sense.fetch_senses(connection, row.id)
                 if senses:
                     result.senses = senses
                 if do_entrylevel_exmples:

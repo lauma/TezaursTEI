@@ -1,12 +1,8 @@
-import regex
 from psycopg2.extras import NamedTupleCursor
 
 from lv.ailab.tezaurs.dbaccess.db_config import db_connection_info
 from lv.ailab.tezaurs.dbaccess.query_uttils import extract_gram
-from lv.ailab.tezaurs.dbaccess.single_synset_queries import fetch_synset_senses, fetch_synset_relations, fetch_gradset, \
-    fetch_exteral_synset_eq_relations, fetch_exteral_synset_neq_relations
-from lv.ailab.tezaurs.dbaccess.subentry_queries import fetch_examples, fetch_gloss_entry_links, fetch_gloss_sense_links, \
-    fetch_sources_by_esl_id, fetch_semantic_derivs_by_sense
+from lv.ailab.tezaurs.dbaccess.subentry_queries import fetch_sources_by_esl_id
 
 
 def fetch_lexemes(connection, entry_id, main_lex_id):
@@ -61,62 +57,6 @@ WHERE l.id = {lexeme_id} and (NOT hidden or reason_for_hiding='not-public')
     if len(lexemes) > 1:
         print(f'Too many primary lexemes for entry {entry_human_key}!')
     return lexemes[0]
-
-
-def fetch_senses(connection, entry_id, parent_sense_id=None):
-    if not entry_id:
-        return
-    cursor = connection.cursor(cursor_factory=NamedTupleCursor)
-    parent_sense_clause = 'is NULL'
-    if parent_sense_id:
-        parent_sense_clause = f"""= {parent_sense_id}"""
-    sql_senses = f"""
-SELECT id, gloss, order_no, parent_sense_id, synset_id, data, hidden
-FROM {db_connection_info['schema']}.senses
-WHERE entry_id = {entry_id} and parent_sense_id {parent_sense_clause} and (NOT hidden or reason_for_hiding='not-public')
-ORDER BY order_no
-"""
-    cursor.execute(sql_senses)
-    senses = cursor.fetchall()
-    if not senses:
-        return
-    result = []
-    for sense in senses:
-        # sense_data = json.loads(sense.data)
-        subsenses = fetch_senses(connection, entry_id, sense.id)
-        sense_dict = {'ord': sense.order_no, 'gloss': sense.gloss, 'hidden': sense.hidden}
-        gram_dict = extract_gram(sense, None)
-        sense_dict.update(gram_dict)
-        if sense.synset_id:
-            sense_dict['synset_id'] = sense.synset_id
-            sense_dict['synset_senses'] = fetch_synset_senses(connection, sense.synset_id)
-            sense_dict['synset_rels'] = fetch_synset_relations(connection, sense.synset_id)
-            sense_dict['gradset'] = fetch_gradset(connection, sense.synset_id)
-            sense_dict['external_eq_rels'] = fetch_exteral_synset_eq_relations(connection, sense.synset_id)
-            sense_dict['external_neq_rels'] = fetch_exteral_synset_neq_relations(connection, sense.synset_id)
-        if subsenses:
-            sense_dict['subsenses'] = subsenses
-        examples = fetch_examples(connection, sense.id)
-        if examples:
-            sense_dict['examples'] = examples
-        sem_derivs = fetch_semantic_derivs_by_sense(connection, sense.id)
-        if (sem_derivs):
-            sense_dict['sem_derivs'] = sem_derivs
-        sources = fetch_sources_by_esl_id(connection, None, None, sense.id)
-        if sources:
-            sense_dict['sources'] = sources
-
-        if regex.search(r'\[((?:\p{L}\p{M}*)+)\]\{e:\d+\}', sense.gloss):
-            gloss_entry_links = fetch_gloss_entry_links(connection, sense.id)
-            if gloss_entry_links:
-                sense_dict['ge_links'] = gloss_entry_links
-        if regex.search(r'\[((?:\p{L}\p{M}*)+)\]\{s:\d+\}', sense.gloss):
-            gloss_sense_links = fetch_gloss_sense_links(connection, sense.id)
-            if gloss_sense_links:
-                sense_dict['gs_links'] = gloss_sense_links
-
-        result.append(sense_dict)
-    return result
 
 
 def fetch_morpho_derivs(connection, entry_id):

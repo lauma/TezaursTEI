@@ -1,10 +1,12 @@
+from lv.ailab.tezaurs.dbobjects.senses import Synset
 from lv.ailab.tezaurs.utils.dict.gloss_normalization import full_cleanup
 from lv.ailab.tezaurs.dbaccess.query_uttils import lmfiy_pos, extract_paradigm_text
+from lv.ailab.tezaurs.utils.dict.ili import IliMapping
 from lv.ailab.tezaurs.utils.xml.writer import XMLWriter
 
 
 class LMFWriter(XMLWriter):
-    #debug_id = 0
+    debug_id: str
 
     def __init__(self, file, dict_version, wordnet_id):
         super().__init__(file, "  ", "\n")
@@ -49,34 +51,35 @@ class LMFWriter(XMLWriter):
                                                'synset': f'{gen_id}-{syn_sense["synset_id"]}'})
         self.end_node('LexicalEntry')
 
-    def print_synset(self, synset_id, synset_senses, synset_lexemes, relations, pwn_relations, ili_map):
-        item_id = f'{self.wordnet_id}-{self.dict_version}-{synset_id}'
+
+    def print_synset(self, synset : Synset, synset_lexemes, ili_map : IliMapping):
+        item_id = f'{self.wordnet_id}-{self.dict_version}-{synset.dbId}'
         self.debug_id = item_id
         memberstr = ''
         for lexeme in synset_lexemes:
             memberstr = f'{memberstr} {self.wordnet_id}-{self.dict_version}-{lexeme["entry"]}-{lexeme["lexeme_id"]}'
         pnw_id = None
-        if pwn_relations:
-            if len(pwn_relations) > 1:
-                print(f'Synset {synset_id} has more than 1 pwn-3.0 relation.')
-            elif pwn_relations[0]['id']:
-                pnw_id = pwn_relations[0]['id']
+        if synset.externalEqRelations:
+            if len(synset.externalEqRelations) > 1:
+                print(f'Synset {synset.dbId} has more than 1 pwn-3.0 relation.')
+            elif synset.externalEqRelations[0]['id']:
+                pnw_id = synset.externalEqRelations[0]['id']
         ili = ili_map.get_mapping(pnw_id)
 
         self.start_node('Synset', {'id': item_id, 'ili': ili, 'members': memberstr.strip()})
         unique_gloss = {}
-        for sense in synset_senses:
-            if 'gloss' in sense:
-                unique_gloss[full_cleanup(sense['gloss'])] = 1
+        for sense in synset.senses:
+            if sense.gloss:
+                unique_gloss[full_cleanup(sense.gloss)] = 1
         for gloss in unique_gloss:
             self.do_simple_leaf_node('Definition', {}, gloss)
-        for rel in relations:
+        for rel in synset.relations:
             self.do_simple_leaf_node('SynsetRelation',
                                      {'relType': rel['target_role'],
                                       'target': f'{self.wordnet_id}-{self.dict_version}-{rel["target_id"]}'})
-        for sense in synset_senses:
-            if 'examples' in sense:
-                for example in sense['examples']:
+        for sense in synset.senses:
+            if sense.examples:
+                for example in sense.examples:
                     attribs = {}
                     if 'source' in example:
                         attribs['source'] = example['source']
