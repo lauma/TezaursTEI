@@ -2,10 +2,11 @@ import regex
 
 
 class IliMapping:
-    #mapping_file = ''
+    mapping_file : str
+    mapping: dict[str, str]
 
     # ILI maping should come from https://github.com/globalwordnet/cili/
-    def __init__(self, path='config/ili-map-pwn30.tab'):
+    def __init__(self, path : str = 'config/ili-map-pwn30.tab'):
         self.mapping_file = path
         self.mapping = {}
 
@@ -19,7 +20,7 @@ class IliMapping:
                     print(f'Could not parse line: {line}')
             print('Done')
 
-    def get_mapping(self, pnw_id):
+    def get_mapping(self, pnw_id: str) -> str:
         if not pnw_id:
             return ''
         if pnw_id not in self.mapping or not self.mapping[pnw_id]:
