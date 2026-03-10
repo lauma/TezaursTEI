@@ -1,3 +1,5 @@
+from typing import Optional, Iterable, Sized, Any
+
 from lv.ailab.tezaurs.utils.dict.db_wordform_utils import is_replacing_wordform_set, filter_wordforms
 from lv.ailab.tezaurs.utils.dict.morpho_constants import MorphoVal, MorphoAttr
 
@@ -19,7 +21,7 @@ class GFUtils:
     }
 
     @staticmethod
-    def get_GF_pos(lexeme):
+    def get_GF_pos(lexeme) -> str:
         result = GFUtils.DEFAULT_GF_POS[lexeme['pos']]
         if (lexeme['pos'] == MorphoVal.NOUN
                 and MorphoAttr.NOUN_TYPE in lexeme['combined_flags']
@@ -32,7 +34,7 @@ class GFUtils:
 
     # TODO aizstāt šo ar tagset XML nolasīšanu
     @staticmethod
-    def get_GF_gender(gender):
+    def get_GF_gender(gender : str) -> Optional[str]:
         match gender:
             case MorphoVal.MASCULINE: return GFUtils.GF_GEND_MASCULINE
             case MorphoVal.FEMININE: return GFUtils.GF_GEND_FEMININE
@@ -40,19 +42,19 @@ class GFUtils:
 
 
     @staticmethod
-    def normalize_for_GF(paradigm):
-        if not paradigm: return
+    def normalize_for_GF(paradigm : str) -> Optional[str]:
+        if not paradigm: return None
         return paradigm.replace('-', GFUtils.BIG_SEPARATOR)
 
 
     @staticmethod
-    def form_concrete_lex_expr(gf_tail, lemma, paradigm):
+    def form_concrete_lex_expr(gf_tail : str, lemma : str, paradigm : str) -> str:
         gf_paradigm = GFUtils.normalize_for_GF(paradigm)
         return f'{gf_paradigm}_from{gf_tail} "{lemma}"'
 
 
     @staticmethod
-    def form_synest_comment(synsets):
+    def form_synest_comment(synsets : set[str]|list[str]) -> Optional[str]:
         if not synsets or len(synsets) < 1:
             return None
         result = GFUtils.INDENT * 3
@@ -63,7 +65,7 @@ class GFUtils:
     # gf_std_form_string is something like `bro.s ! Sg ! Voc` - something to add to include standard forms from paradigm
     # Result is something like `variants{ "brāl" ; bro.s ! Sg ! Voc }`
     @staticmethod
-    def _form_variant_list(wordforms, gf_std_form_string):
+    def _form_variant_list(wordforms : list[dict[str, Any]], gf_std_form_string : str) -> Optional[str]:
         if not wordforms or len(wordforms) < 1:
             return None
         include_standard_forms = not is_replacing_wordform_set(wordforms)
@@ -77,7 +79,8 @@ class GFUtils:
 
     # Result is something like `{ Sg => old_noun.s ! Sg ** variants{ "brāl" ; bro.s ! Sg ! Voc } ; Pl => old_noun.s ! Pl ** { Voc = "brāļi" } }`
     @staticmethod
-    def _form_table_with_vocative_extension(sg_voc_wordforms, pl_voc_wordforms):
+    def _form_table_with_vocative_extension(sg_voc_wordforms : list[dict[str, Any]],
+                                            pl_voc_wordforms : list[dict[str, Any]]) -> Optional[str]:
         if ((not sg_voc_wordforms or len(sg_voc_wordforms) < 1)
                 and (not pl_voc_wordforms or len(pl_voc_wordforms) < 1)):
             return None
@@ -104,7 +107,8 @@ class GFUtils:
     #     Pl => bro.s ! Pl ** { Voc => "brāļi" } } ;
     #   gend = bro.gend } ;
     @staticmethod
-    def form_N_with_vocative_extension(lexeme, paradigm_expr, gender=None):
+    def form_N_with_vocative_extension(lexeme : dict[str, Any],
+                                       paradigm_expr : str, gender : str = None) -> Optional[str]:
         if 'wordforms' not in lexeme or not lexeme['wordforms'] or len(lexeme['wordforms']) < 1:
             return None
         sg_voc_wfs, leftover_wordforms = filter_wordforms(
@@ -122,22 +126,32 @@ class GFUtils:
 
 
     @staticmethod
-    def form_N_with_changed_gender(paradigm_expr, gender):
+    def form_N_with_changed_gender(paradigm_expr : str, gender : str) -> str:
         return f"let {GFUtils.DEFAULT_LET_VARIABLE} = {paradigm_expr} in {{ s = {GFUtils.DEFAULT_LET_VARIABLE}.s ; gend = {gender} }}"
 
 
     @staticmethod
     # Result is something like `let l = noun_6b_fromNomPl "Cēsis" in { s = l.s ! Pl ; gend = l.gend ; num = Pl }`
-    def _form_LN(paradigm_expr, number, gender=None):
+    def _form_LN(paradigm_expr : str, number : str, gender : str = None) -> str:
         gf_gend = gender if gender else f"{GFUtils.DEFAULT_LET_VARIABLE}.gend"
         return f"let {GFUtils.DEFAULT_LET_VARIABLE} = {paradigm_expr} in {{ s = {GFUtils.DEFAULT_LET_VARIABLE}.s ! {number} ; gend = {gf_gend} ; num = {number} }}"
 
 
     @staticmethod
-    def form_LN_plural(paradim_expr, gender=None):
+    def form_LN_plural(paradim_expr : str, gender : str = None) -> str:
         return GFUtils._form_LN(paradim_expr, GFUtils.GF_NUMBER_PLURAL, gender)
 
 
     @staticmethod
-    def form_LN_singular(paradim_expr, gender=None):
+    def form_LN_singular(paradim_expr : str, gender : str = None) -> str:
         return GFUtils._form_LN(paradim_expr, GFUtils.GF_NUMBER_SINGULAR, gender)
+
+
+class GFPrintItem:
+    def __init__(self,
+                 lemmas : set[str] = None,
+                 ids : set[int] = None,
+                 synsets : set[str] = None):
+        self.lemmas : set[str] = set() if lemmas is None else lemmas
+        self.ids : set[str] = set() if ids is None else ids
+        self.synsets : set[str] = set() if synsets is None else synsets

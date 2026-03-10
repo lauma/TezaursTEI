@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
+from typing import Any
+import sys
+
 from lv.ailab.tezaurs.dbaccess.connection import db_connect
 from lv.ailab.tezaurs.dbaccess.db_config import db_connection_info
 from lv.ailab.tezaurs.dbaccess.overview_querries import get_dict_version, fetch_all_lexemes_with_paradigms_and_synsets
-import sys
-
 from lv.ailab.tezaurs.exports.gf.gf_output import GFConcreteWriter, GFAbstractWriter
-from lv.ailab.tezaurs.exports.gf.gf_utils import GFUtils
+from lv.ailab.tezaurs.exports.gf.gf_utils import GFUtils, GFPrintItem
 from lv.ailab.tezaurs.utils.dict.morpho_constants import MorphoVal, MorphoAttr
 
 connection = None
@@ -41,7 +42,7 @@ gf_conc_printer.print_head(module_name_conc, module_name_abs, dict_version)
 # them in this map variable (indexed by resulting concrete grammar expression and GF
 # category/POS). Only after all lexemes are processed, we do the writing in
 # the GF output files.
-result_lexemes_by_concrete = {}
+result_lexemes_by_concrete : dict[tuple[str, str], GFPrintItem] = {}
 for lexeme in fetch_all_lexemes_with_paradigms_and_synsets(connection):
     # Currently only noun processing. Must be updated for other POS, when structure becomes clearer.
     if lexeme['paradigm'] not in implemented_paradigms:
@@ -98,27 +99,27 @@ for lexeme in fetch_all_lexemes_with_paradigms_and_synsets(connection):
 
     # If we have actually managed to get a concrete expression, then we add it to the great data structure for printing
     if conc_expr:
-        result_entry = result_lexemes_by_concrete[(conc_expr, gf_pos)]\
-            if (conc_expr, gf_pos) in result_lexemes_by_concrete\
-            else {'lemmas': set(), 'ids': set(), 'synsets': set()}
-        result_entry['lemmas'].add(lexeme['lemma'])
-        result_entry['ids'].add(lexeme['id'])
-        result_entry['synsets'].update(lexeme['external_synsets'])
+        result_entry = GFPrintItem()
+        if (conc_expr, gf_pos) in result_lexemes_by_concrete:
+            result_entry = result_lexemes_by_concrete[(conc_expr, gf_pos)]
+        result_entry.lemmas.add(lexeme['lemma'])
+        result_entry.ids.add(lexeme['id'])
+        result_entry.synsets.update(lexeme['external_synsets'])
         result_lexemes_by_concrete[(conc_expr, gf_pos)] = result_entry
 
 # Finally we print all the processed lexemes to output...
-for (conc_expr, gf_pos) in result_lexemes_by_concrete.keys():
+sorting_funct = lambda x: sorted(result_lexemes_by_concrete[x].lemmas, key=lambda y : y.lower())[0].lower()
+for (conc_expr, gf_pos) in sorted(result_lexemes_by_concrete.keys(), key=sorting_funct):
     gf_lexeme_data = result_lexemes_by_concrete[(conc_expr, gf_pos)]
-    variable_postfix = GFUtils.BIG_SEPARATOR.join(str(id) for id in sorted(gf_lexeme_data['ids']))
+    lemma = sorted(gf_lexeme_data.lemmas, key=lambda y : y.lower())[0]
+    variable_postfix = GFUtils.BIG_SEPARATOR.join(str(id) for id in sorted(gf_lexeme_data.ids))
     variable_postfix = f"{variable_postfix}{GFUtils.BIG_SEPARATOR}{gf_pos}"
-    synset_comment = GFUtils.form_synest_comment(gf_lexeme_data['synsets'])
-    if len(gf_lexeme_data['lemmas']) > 1:
-        print(f"Warning: from lemma set {{ {'; '.join(gf_lexeme_data['lemmas'])} }} picking \"{gf_lexeme_data['lemmas'][0]}\"!\n")
-    #if len(gf_lexeme_data['gf_pos']) > 1:
-    #    print(f"Warning: for {gf_lexeme_data['lemmas'][0]} from POS set {{ {'; '.join(gf_lexeme_data['gf_pos'])} }} picking \"{gf_lexeme_data['gf_pos'][0]}\"!\n")
+    synset_comment = GFUtils.form_synest_comment(gf_lexeme_data.synsets)
+    if len(gf_lexeme_data.lemmas) > 1:
+        print(f"Warning: from lemma set {{ {'; '.join(gf_lexeme_data.lemmas)} }} picking \"{lemma}\"!\n")
 
-    gf_abs_printer.print_lexeme(list(gf_lexeme_data['lemmas'])[0], variable_postfix, gf_pos, synset_comment)
-    gf_conc_printer.print_lexeme(list(gf_lexeme_data['lemmas'])[0], variable_postfix, conc_expr, synset_comment)
+    gf_abs_printer.print_lexeme(lemma, variable_postfix, gf_pos, synset_comment)
+    gf_conc_printer.print_lexeme(lemma, variable_postfix, conc_expr, synset_comment)
 
 # ... And finish the GF files with appropriate endings.
 gf_abs_printer.print_tail()
