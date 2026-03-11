@@ -1,4 +1,7 @@
+from typing import Optional
+
 from lv.ailab.tezaurs.dbobjects.entries import Entry
+from lv.ailab.tezaurs.dbobjects.examples import Example
 from lv.ailab.tezaurs.dbobjects.senses import Synset, Sense
 from lv.ailab.tezaurs.utils.dict.gloss_normalization import mandatory_normalization, full_cleanup
 from lv.ailab.tezaurs.utils.dict.ili import IliMapping
@@ -9,7 +12,6 @@ import regex
 
 
 class TEIWriter(XMLWriter):
-
     def __init__(self, file, dict_version, whitelist=None, indent_chars="  ", newline_chars="\n"):
         super().__init__(file, indent_chars, newline_chars)
         self.whitelist = whitelist
@@ -244,10 +246,10 @@ class TEIWriter(XMLWriter):
         for lexeme in entry.lexemes:
             self.print_lexeme(lexeme, f'{self.dict_version}/{entry.dbId}', entry.headword, entry.type, is_first)
             is_first = False
-        if entry.senses:
+        if len(entry.senses) > 0:
             for sense in entry.senses:
                 self.print_sense(sense, f'{self.dict_version}/{entry.dbId}', ili_map)
-        if entry.examples:
+        if len(entry.examples) > 0:
             for example in entry.examples:
                 self.print_example(example)
         if entry.etymology:
@@ -374,45 +376,39 @@ class TEIWriter(XMLWriter):
         self._do_smart_leaf_node('def', {}, norm_gloss, sense.glossToEntryLinks, sense.glossToSenseLinks)
         if sense.synset:
             self.print_synset_related(sense.synset, ili_map)
-        if sense.examples:
-            for example in sense.examples:
-                self.print_example(example)
-
-        if sense.semanticDerivatives:
-            for deriv in sense.semanticDerivatives:
-                self.print_sem_deriv(deriv)
-
+        for example in sense.examples:
+            self.print_example(example)
+        for deriv in sense.semanticDerivatives:
+            self.print_sem_deriv(deriv)
         if sense.sources:
             self.print_esl_sources(sense.sources)
-
-        if sense.subsenses:
-            for subsense in sense.subsenses:
-                self.print_sense(subsense, sense_id, ili_map)
+        for subsense in sense.subsenses:
+            self.print_sense(subsense, sense_id, ili_map)
 
         self.end_node('sense')
 
-    def print_example(self, example):
-        if 'text' not in example or not example['text']:
+    def print_example(self, example : Example):
+        if len(example.text) < 1:
             return
         cit_attr = {'type': 'example'}
-        if example['hidden']:
+        if example.hidden:
             cit_attr['rend'] = 'hidden'
         self.start_node('cit', cit_attr)
 
-        if 'location' not in example:
-            self.do_simple_leaf_node('quote', {}, example['text'])
+        if not example.tokenLocation:
+            self.do_simple_leaf_node('quote', {}, example.text)
         else:
             self.gen.ignorableWhitespace(self.indent_chars * self.xml_depth)
             self.gen.startElement('quote', {})
-            self.gen.characters(example['text'][:example['location']+0])
+            self.gen.characters(example.text[:example.tokenLocation+0])
             self.gen.startElement('anchor', {})
             self.gen.endElement('anchor')
-            self.gen.characters(example['text'][example['location']+0:])
+            self.gen.characters(example.text[example.tokenLocation+0:])
             self.gen.endElement('quote')
             self.gen.ignorableWhitespace(self.newline_chars)
 
-        if 'source' in example:
-            self.do_simple_leaf_node('bibl', {}, example['source'])
+        if example.source:
+            self.do_simple_leaf_node('bibl', {}, example.source)
 
         self.end_node('cit')
 
@@ -451,7 +447,7 @@ class TEIWriter(XMLWriter):
         self.end_node('xr')
 
     def print_synset_related(self, synset : Synset, ili_map : IliMapping):
-        if synset.senses:
+        if len(synset.senses) > 0:
             self.start_node('xr', {'type': 'synset', 'id': f'{self.dict_version}/synset:{synset.dbId}'})
             for sense in synset.senses:
                 # TODO use hard ids when those are fixed
@@ -520,7 +516,8 @@ class TEIWriter(XMLWriter):
         self.end_node('form')
 
 
-def lexeme_type(type_from_db, entry_type):
+
+def lexeme_type(type_from_db : str, entry_type : str) -> Optional[str]:
     match type_from_db:
         case 'default':
             if entry_type == 'word':
@@ -539,3 +536,5 @@ def lexeme_type(type_from_db, entry_type):
             return 'abbreviation'
         case 'alternativeSpellingDerivative':
             return 'variantDerivative'
+    return None
+

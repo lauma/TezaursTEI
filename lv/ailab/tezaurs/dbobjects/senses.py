@@ -8,23 +8,24 @@ from lv.ailab.tezaurs.dbaccess.db_config import db_connection_info
 from lv.ailab.tezaurs.dbaccess.query_uttils import extract_gram
 from lv.ailab.tezaurs.dbaccess.single_synset_queries import fetch_synset_relations, \
     fetch_exteral_synset_eq_relations, fetch_exteral_synset_neq_relations
-from lv.ailab.tezaurs.dbaccess.subentry_queries import fetch_gloss_entry_links, fetch_gloss_sense_links, fetch_examples, \
+from lv.ailab.tezaurs.dbaccess.subentry_queries import fetch_gloss_entry_links, fetch_gloss_sense_links, \
     fetch_semantic_derivs_by_sense, fetch_sources_by_esl_id
+from lv.ailab.tezaurs.dbobjects.examples import Example
 
 
 class Sense:
     def __init__(self, db_id, ord_no, gloss, hidden):
-        self.dbId: int = db_id
-        self.calculatedHumanId: Optional[str] = None
-        self.orderNo: int = ord_no
-        self.hidden: bool = hidden
-        self.gloss: str = gloss
+        self.dbId : int = db_id
+        self.calculatedHumanId : Optional[str] = None
+        self.orderNo : int = ord_no
+        self.hidden : bool = hidden
+        self.gloss : str = gloss
 
-        self.synset: Optional[Synset] = None
+        self.synset : Optional[Synset] = None
         self.gram = None
 
-        self.examples = None
-        self.subsenses: list[Sense] = []
+        self.examples : list[Example] = []
+        self.subsenses : list[Sense] = []
         self.sources = None
 
         self.semanticDerivatives = None
@@ -34,9 +35,9 @@ class Sense:
 
     @staticmethod
     def fetch_senses(connection : DbConnection, entry_id : int, parent_sense_id : int = None)\
-            -> Optional[list[Sense]]:
+            -> list[Sense]:
         if not entry_id:
-            return None
+            return []
         cursor = connection.cursor(cursor_factory=NamedTupleCursor)
         parent_sense_clause = 'is NULL'
         if parent_sense_id:
@@ -50,7 +51,7 @@ class Sense:
         cursor.execute(sql_senses)
         senses = cursor.fetchall()
         if not senses:
-            return None
+            return []
         result = []
         for sense_data in senses:
             sense = Sense(sense_data.id, sense_data.order_no, sense_data.gloss, sense_data.hidden)
@@ -64,7 +65,7 @@ class Sense:
                     fetch_exteral_synset_eq_relations(connection, sense_data.synset_id),
                     fetch_exteral_synset_neq_relations(connection, sense_data.synset_id))
             sense.subsenses = Sense.fetch_senses(connection, entry_id, sense_data.id)
-            sense.examples = fetch_examples(connection, sense_data.id)
+            sense.examples = Example.fetch_examples(connection, sense_data.id)
             sense.semanticDerivatives = fetch_semantic_derivs_by_sense(connection, sense_data.id)
             sense.sources = fetch_sources_by_esl_id(connection, None, None, sense_data.id)
 
@@ -78,9 +79,9 @@ class Sense:
 
 
     @staticmethod
-    def fetch_synset_senses(connection : DbConnection, synset_id : int) -> Optional[list[Sense]]:
+    def fetch_synset_senses(connection : DbConnection, synset_id : int) -> list[Sense]:
         if not synset_id:
-            return None
+            return []
         cursor = connection.cursor(cursor_factory=NamedTupleCursor)
         sql_synset_senses = f"""
     SELECT syn.id, s.id as sense_id, s.order_no as sense_no, s.gloss as gloss, s.hidden,
@@ -95,7 +96,7 @@ class Sense:
         cursor.execute(sql_synset_senses)
         synset_members = cursor.fetchall()
         if not synset_members:
-            return None
+            return []
         result = []
         for member in synset_members:
             sense = Sense(member.sense_id, member.sense_no, member.gloss, member.hidden)
@@ -105,7 +106,7 @@ class Sense:
                 sense.calculatedHumanId = f'{member.entry_hk}/{member.parent_sense_no}/{member.sense_no}'
             else:
                 sense.calculatedHumanId = f'{member.entry_hk}/{member.sense_no}'
-            sense.examples = fetch_examples(connection, member.sense_id)
+            sense.examples = Example.fetch_examples(connection, member.sense_id)
             result.append(sense)
         return result
 
@@ -150,10 +151,10 @@ class Synset:
 
 
 class Gradset:
-    def __init__(self, db_id, gradset_category, member_synsets):
+    def __init__(self, db_id, gradset_category, member_synset_ids):
         self.dbId : int = db_id
         self.category : str = gradset_category
-        self.memberIds : list[int] = member_synsets
+        self.memberIds : list[int] = member_synset_ids
 
 
     @staticmethod

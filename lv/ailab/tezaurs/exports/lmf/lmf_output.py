@@ -6,15 +6,14 @@ from lv.ailab.tezaurs.utils.xml.writer import XMLWriter
 
 
 class LMFWriter(XMLWriter):
-    debug_id: str
 
     def __init__(self, file, dict_version, wordnet_id):
         super().__init__(file, "  ", "\n")
-        self.debug_id = 0
-        self.wordnet_id = wordnet_id
-        self.dict_version = dict_version
+        self.debug_id : str = ""
+        self.wordnet_id : str = wordnet_id
+        self.dict_version : str = dict_version
 
-    def print_head(self, wordnet_vers):
+    def print_head(self, wordnet_vers : str):
         self.start_document('<!DOCTYPE LexicalResource SYSTEM "http://globalwordnet.github.io/schemas/WN-LMF-1.1.dtd">')
         self.start_node('LexicalResource', {'xmlns:dc': "http://purl.org/dc/elements/1.1/"})
         self.start_node('Lexicon', {'id': self.wordnet_id,
@@ -78,10 +77,9 @@ class LMFWriter(XMLWriter):
                                      {'relType': rel['target_role'],
                                       'target': f'{self.wordnet_id}-{self.dict_version}-{rel["target_id"]}'})
         for sense in synset.senses:
-            if sense.examples:
-                for example in sense.examples:
-                    attribs = {}
-                    if 'source' in example:
-                        attribs['source'] = example['source']
-                    self.do_simple_leaf_node('Example', attribs, example['text'])
+            for example in sense.examples:
+                attribs = {}
+                if example.source:
+                    attribs['source'] = example.source
+                self.do_simple_leaf_node('Example', attribs, example.text)
         self.end_node('Synset')

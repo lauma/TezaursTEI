@@ -1,12 +1,12 @@
 from typing import Generator, Optional
-
 from psycopg2.extras import NamedTupleCursor
 
 from lv.ailab.tezaurs.dbaccess.connection import DbConnection
 from lv.ailab.tezaurs.dbaccess.db_config import db_connection_info
 from lv.ailab.tezaurs.dbaccess.query_uttils import extract_gram
 from lv.ailab.tezaurs.dbaccess.single_entry_queries import fetch_lexemes, fetch_morpho_derivs
-from lv.ailab.tezaurs.dbaccess.subentry_queries import fetch_examples, fetch_sources_by_esl_id
+from lv.ailab.tezaurs.dbaccess.subentry_queries import fetch_sources_by_esl_id
+from lv.ailab.tezaurs.dbobjects.examples import Example
 from lv.ailab.tezaurs.dbobjects.senses import Sense
 
 
@@ -23,8 +23,8 @@ class Entry:
         self.gram = None
 
         self.lexemes = None
-        self.senses: Optional[list[Sense]] = None
-        self.examples = None
+        self.senses: list[Sense] = []
+        self.examples: list[Example] = []
         self.sources = None
 
         self.morphoDerivatives = None
@@ -74,13 +74,9 @@ class Entry:
                         (row.type_name == 'wordPart' or primary_lexeme['lemma'].startswith('-') or
                          primary_lexeme['lemma'].endswith('-')):
                     continue
-                senses = Sense.fetch_senses(connection, row.id)
-                if senses:
-                    result.senses = senses
+                result.senses = Sense.fetch_senses(connection, row.id)
                 if do_entrylevel_exmples:
-                    examples = fetch_examples(connection, row.id, True)
-                    if examples:
-                        result.examples = examples
+                    result.examples = Example.fetch_examples(connection, row.id, True)
                 sources = fetch_sources_by_esl_id(connection, row.id, None, None)
                 if sources:
                     result.sources = sources
