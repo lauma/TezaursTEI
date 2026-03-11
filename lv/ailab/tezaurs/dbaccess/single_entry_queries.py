@@ -2,7 +2,7 @@ from psycopg2.extras import NamedTupleCursor
 
 from lv.ailab.tezaurs.dbaccess.db_config import db_connection_info
 from lv.ailab.tezaurs.dbaccess.query_uttils import extract_gram
-from lv.ailab.tezaurs.dbaccess.subentry_queries import fetch_sources_by_esl_id
+from lv.ailab.tezaurs.dbobjects.sources import DictSource
 
 
 def fetch_lexemes(connection, entry_id, main_lex_id):
@@ -31,9 +31,7 @@ ORDER BY (l.id!={main_lex_id}), order_no
 
         gram_dict = extract_gram(lexeme, {'Stems', 'Morfotabulas tips', 'Paradigmas īpatnības'})
         lexeme_dict.update(gram_dict)
-        sources = fetch_sources_by_esl_id(connection, None, lexeme.id, None)
-        if sources:
-            lexeme_dict['sources'] = sources
+        lexeme_dict['sources'] = DictSource.fetch_sources_by_esl_id(connection, None, lexeme.id, None)
         result.append(lexeme_dict)
     return result
 

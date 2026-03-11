@@ -1,14 +1,15 @@
-from typing import Optional
+from typing import Optional, Generator, Iterable
+import regex
 
 from lv.ailab.tezaurs.dbobjects.entries import Entry
 from lv.ailab.tezaurs.dbobjects.examples import Example
 from lv.ailab.tezaurs.dbobjects.senses import Synset, Sense
+from lv.ailab.tezaurs.dbobjects.sources import DictSource
 from lv.ailab.tezaurs.utils.dict.gloss_normalization import mandatory_normalization, full_cleanup
 from lv.ailab.tezaurs.utils.dict.ili import IliMapping
 from lv.ailab.tezaurs.utils.dict.pron_normalization import prettify_pronunciation, prettify_text_with_pronunciation
 from lv.ailab.tezaurs.dbaccess.query_uttils import extract_paradigm_text
 from lv.ailab.tezaurs.utils.xml.writer import XMLWriter
-import regex
 
 
 class TEIWriter(XMLWriter):
@@ -18,12 +19,14 @@ class TEIWriter(XMLWriter):
         self.debug_entry_id = ''
         self.dict_version = dict_version
 
+
     def _do_smart_leaf_node(self, name, attrs, content, ge_links=None, gs_links=None):
         self.gen.ignorableWhitespace(self.indent_chars * self.xml_depth)
         self.gen.startElement(name, attrs)
         self._do_content_with_mentions_glosslinks(content, ge_links, gs_links)
         self.gen.endElement(name)
         self.gen.ignorableWhitespace(self.newline_chars)
+
 
     def _do_content_with_mentions_glosslinks(self, content, ge_links=None, gs_links=None):
         # parts = regex.split('</?(?:em|i)>', content)
@@ -45,6 +48,7 @@ class TEIWriter(XMLWriter):
             else:
                 self._do_content_with_glosslinks(part, ge_links, gs_links)
                 is_mentioned = True
+
 
     def _do_content_with_glosslinks(self, content, ge_links=None, gs_links=None):
         if not ge_links and not gs_links:
@@ -84,10 +88,12 @@ class TEIWriter(XMLWriter):
                 match = regex.fullmatch(glosslink_regex, content_left)
             self.gen.characters(content_left)
 
-    def print_head(self, dictionary, title_long = 'Dictionary', title_short=None,
-                   edition='TODO', editors='TODO',
-                   entry_count='TODO', lexeme_count='TODO', sense_count='TODO',
-                   year='TODO', month='TODO', url=None, copyright=None):
+
+    def print_head(self, dictionary : str, title_long : str = 'Dictionary', title_short : str = None,
+                   edition : str = 'TODO', editors : str = 'TODO',
+                   entry_count : str = 'TODO', lexeme_count : str = 'TODO', sense_count : str = 'TODO',
+                   year : str = 'TODO', month : str = 'TODO',
+                   url : Optional[str] = None, copyright : Optional[str] = None):
         self.start_document()
         self.start_node('TEI', {})
         self.start_node('fileDesc', {})
@@ -188,7 +194,8 @@ class TEIWriter(XMLWriter):
         else:
             self.start_node('body', {})
 
-    def print_tail(self, dictionary):
+
+    def print_tail(self, dictionary : str):
         if dictionary.endswith('_wordforms'):
             self.end_node('standOff')
         else:
@@ -196,21 +203,24 @@ class TEIWriter(XMLWriter):
         self.end_node('TEI')
         self.end_document()
 
-    def print_back_matter(self, sources):
+
+    def print_back_matter(self, sources : Generator[DictSource]):
         self.start_node('back', {})
         self.start_node('listBibl', {})
         for source in sources:
             # FIXME būtu labi, ja te varētu gudrāk dalīt elementos.
-            title = regex.sub('</?(?:em|i)>', '', source['title'])
-            if 'url' in source and source['url']:
-                self.do_simple_leaf_node('bibl', {'id': source['abbr'], 'url': source['url']}, title)
+            source_title = regex.sub('</?(?:em|i)>', '', source.title)
+            if source.url and len(source.url) > 0:
+                self.do_simple_leaf_node('bibl',
+                                         {'id': source.abbreviation, 'url': source.url}, source_title)
             else:
-                self.do_simple_leaf_node('bibl', {'id': source['abbr']}, title)
-        self.do_simple_leaf_node('bibl', {'id': 'MORPHO', 'url': 'https://github.com/PeterisP/morphology'},
-                                 'Paikens P. Morphological Analyzer and Synthesizer for Latvian. ' +
-                                 'Institute of Mathematics and Computer Science, University of Latvia, 2005-2022.')
+                self.do_simple_leaf_node('bibl', {'id': source.abbreviation}, source_title)
+        self.do_simple_leaf_node('bibl', {'id': 'MORPHO', 'url': 'https://github.com/LUMII-AILab/Morphology/'},
+                                 'Paikens P. et al. Morphological Analyzer and Synthesizer for Latvian. ' +
+                                 'Institute of Mathematics and Computer Science, University of Latvia, 2005-2026.')
         self.end_node('listBibl')
         self.end_node('back')
+
 
     # TODO: sakārtot, lai drukā ar jauno leksēmu drukāšanas funkciju un visas leksēmas
     def print_entry(self, entry : Entry, ili_map : IliMapping = None):
@@ -261,6 +271,7 @@ class TEIWriter(XMLWriter):
             self.print_esl_sources(entry.sources)
         self.end_node('entry')
 
+
     def print_lexeme(self, lexeme, id_stub, headword, entry_type, is_main=False):
         lexeme_id = f'{id_stub}/{lexeme["id"]}'
         form_attrs = {}
@@ -286,6 +297,7 @@ class TEIWriter(XMLWriter):
             self.print_esl_sources(lexeme['sources'])
 
         self.end_node('form')
+
 
     def print_gram(self, parent, wraper_elem_name=None):
         if 'flags' not in parent and 'struct_restr' not in parent and \
@@ -323,6 +335,7 @@ class TEIWriter(XMLWriter):
         if wraper_elem_name:
             self.end_node(wraper_elem_name)
 
+
     # TODO piesaistīt karoga anglisko nosaukumu
     def print_flags(self, flags, ignored_flags=None):
         if ignored_flags is None:
@@ -338,6 +351,7 @@ class TEIWriter(XMLWriter):
                 else:
                     self.do_simple_leaf_node('gram', {'type': key}, flags[key])
         self.end_node('gramGrp')
+
 
     # TODO piesaistīt ierobežojuma anglisko nosaukumu un varbūt arī biežuma?
     def print_struct_restr(self, struct_restr):
@@ -365,12 +379,14 @@ class TEIWriter(XMLWriter):
                     self.do_simple_leaf_node('gram', {'type': 'languageMaterial'}, material)
             self.end_node('gramGrp')
 
+
     def print_sense(self, sense : Sense, id_stub, ili_map : IliMapping):
         sense_id = f'{id_stub}/{sense.orderNo}'
         sense_xml_attrs = {'id': sense_id, 'n': f'{sense.orderNo}'}
         if sense.hidden:
             sense_xml_attrs['rend'] = 'hidden'
         self.start_node('sense', sense_xml_attrs)
+
         self.print_gram(sense.gram)
         norm_gloss = mandatory_normalization(sense.gloss)
         self._do_smart_leaf_node('def', {}, norm_gloss, sense.glossToEntryLinks, sense.glossToSenseLinks)
@@ -386,6 +402,7 @@ class TEIWriter(XMLWriter):
             self.print_sense(subsense, sense_id, ili_map)
 
         self.end_node('sense')
+
 
     def print_example(self, example : Example):
         if len(example.text) < 1:
@@ -412,18 +429,20 @@ class TEIWriter(XMLWriter):
 
         self.end_node('cit')
 
-    def print_esl_sources(self, sources):
+
+    def print_esl_sources(self, sources : Iterable[DictSource]):
         if not sources:
             return
         self.start_node('listBibl', {})
         for source in sources:
-            if source['details']:
-                self.start_node('bibl', {'corresp': f"#{source['abbr']}"})
-                self.do_simple_leaf_node('biblScope', {}, source['details'])
+            if source.details:
+                self.start_node('bibl', {'corresp': f"#{source.abbreviation}"})
+                self.do_simple_leaf_node('biblScope', {}, source.details)
                 self.end_node('bibl')
             else:
-                self.do_simple_leaf_node('bibl', {'corresp': f"#{source['abbr']}"})
+                self.do_simple_leaf_node('bibl', {'corresp': f"#{source.abbreviation}"})
         self.end_node('listBibl')
+
 
     def print_sem_deriv(self, sem_deriv):
         xr_attr = {'type': 'derivative', 'subtype': 'semantics'}
@@ -435,6 +454,7 @@ class TEIWriter(XMLWriter):
         self.do_simple_leaf_node('ref', {'target': f'{self.dict_version}/{sem_deriv["target_softid"]}'})
         self.end_node('xr')
 
+
     def print_morpho_deriv(self, morpho_deriv):
         xr_attr = {'type': 'derivative', 'subtype': 'morphology'}
         if morpho_deriv['hidden']:
@@ -445,6 +465,7 @@ class TEIWriter(XMLWriter):
         self.do_simple_leaf_node('ref', {'target': f'{self.dict_version}/{morpho_deriv["target_softid"]}'})
         self.print_gram(morpho_deriv, 'desc')
         self.end_node('xr')
+
 
     def print_synset_related(self, synset : Synset, ili_map : IliMapping):
         if len(synset.senses) > 0:
@@ -471,8 +492,8 @@ class TEIWriter(XMLWriter):
                         scope = scope[7:8].capitalize() + scope[8:]
                     self.do_simple_leaf_node(
                         'ref', {'type': f'external{scope}', 'subtype': relation['desc'], 'target': relation['id']})
-
             self.end_node('xr')
+
         if synset.relations:
             for relation in synset.relations:
                 xr_attr = {'type': f'{relation["relation"]}'}
@@ -483,6 +504,7 @@ class TEIWriter(XMLWriter):
                 self.do_simple_leaf_node('lbl', {'type': 'target'}, f'{relation["target_role"]}')
                 self.do_simple_leaf_node('ref', {'target': f'{self.dict_version}/synset:{relation["target_id"]}'})
                 self.end_node('xr')
+
         if synset.gradset:
             self.start_node('xr',
                             {'type': 'gradationSet', 'id': f'{self.dict_version}/gradset:{synset.gradset.dbId}'})
@@ -493,6 +515,7 @@ class TEIWriter(XMLWriter):
                 self.start_node('xr', {'type': 'gradationClass'})
                 self.do_simple_leaf_node('ref', {'target': f'{self.dict_version}/synset:{synset.gradset.category}'})
                 self.end_node('xr')
+
 
     def print_wordform_set_entry(self, entry_id_no, lexeme_id_no, lemma, flags, formlist_from_json):
         full_lexeme_id = f'{self.dict_version}/{entry_id_no}/{lexeme_id_no}'
@@ -505,6 +528,7 @@ class TEIWriter(XMLWriter):
             self.print_single_wordform(wordform)
         self.end_node('form')
         self.end_node('entry')
+
 
     def print_single_wordform(self, wordform_from_json):
         if 'Sistemātisks atvasinājums' in wordform_from_json and wordform_from_json['Sistemātisks atvasinājums'] == 'Jā':

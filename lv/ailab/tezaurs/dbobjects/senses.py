@@ -1,5 +1,4 @@
 from typing import Optional, Generator
-
 import regex
 from psycopg2.extras import NamedTupleCursor
 
@@ -8,9 +7,10 @@ from lv.ailab.tezaurs.dbaccess.db_config import db_connection_info
 from lv.ailab.tezaurs.dbaccess.query_uttils import extract_gram
 from lv.ailab.tezaurs.dbaccess.single_synset_queries import fetch_synset_relations, \
     fetch_exteral_synset_eq_relations, fetch_exteral_synset_neq_relations
-from lv.ailab.tezaurs.dbaccess.subentry_queries import fetch_gloss_entry_links, fetch_gloss_sense_links, \
-    fetch_semantic_derivs_by_sense, fetch_sources_by_esl_id
+from lv.ailab.tezaurs.dbaccess.subentry_queries import fetch_gloss_entry_links, \
+    fetch_gloss_sense_links, fetch_semantic_derivs_by_sense
 from lv.ailab.tezaurs.dbobjects.examples import Example
+from lv.ailab.tezaurs.dbobjects.sources import DictSource
 
 
 class Sense:
@@ -26,7 +26,7 @@ class Sense:
 
         self.examples : list[Example] = []
         self.subsenses : list[Sense] = []
-        self.sources = None
+        self.sources : list[DictSource] = []
 
         self.semanticDerivatives = None
         self.glossToEntryLinks = None
@@ -67,7 +67,7 @@ class Sense:
             sense.subsenses = Sense.fetch_senses(connection, entry_id, sense_data.id)
             sense.examples = Example.fetch_examples(connection, sense_data.id)
             sense.semanticDerivatives = fetch_semantic_derivs_by_sense(connection, sense_data.id)
-            sense.sources = fetch_sources_by_esl_id(connection, None, None, sense_data.id)
+            sense.sources = DictSource.fetch_sources_by_esl_id(connection, None, None, sense_data.id)
 
             if regex.search(r'\[((?:\p{L}\p{M}*)+)\]\{e:\d+\}', sense_data.gloss):
                 sense.glossToEntryLinks = fetch_gloss_entry_links(connection, sense_data.id)

@@ -5,9 +5,9 @@ from lv.ailab.tezaurs.dbaccess.connection import DbConnection
 from lv.ailab.tezaurs.dbaccess.db_config import db_connection_info
 from lv.ailab.tezaurs.dbaccess.query_uttils import extract_gram
 from lv.ailab.tezaurs.dbaccess.single_entry_queries import fetch_lexemes, fetch_morpho_derivs
-from lv.ailab.tezaurs.dbaccess.subentry_queries import fetch_sources_by_esl_id
 from lv.ailab.tezaurs.dbobjects.examples import Example
 from lv.ailab.tezaurs.dbobjects.senses import Sense
+from lv.ailab.tezaurs.dbobjects.sources import DictSource
 
 
 class Entry:
@@ -23,9 +23,9 @@ class Entry:
         self.gram = None
 
         self.lexemes = None
-        self.senses: list[Sense] = []
-        self.examples: list[Example] = []
-        self.sources = None
+        self.senses : list[Sense] = []
+        self.examples : list[Example] = []
+        self.sources : list[DictSource] = []
 
         self.morphoDerivatives = None
 
@@ -77,9 +77,7 @@ class Entry:
                 result.senses = Sense.fetch_senses(connection, row.id)
                 if do_entrylevel_exmples:
                     result.examples = Example.fetch_examples(connection, row.id, True)
-                sources = fetch_sources_by_esl_id(connection, row.id, None, None)
-                if sources:
-                    result.sources = sources
+                result.sources = DictSource.fetch_sources_by_esl_id(connection, row.id)
                 morpho_derivs = fetch_morpho_derivs(connection, row.id)
                 if morpho_derivs:
                     result.morphoDerivatives = morpho_derivs

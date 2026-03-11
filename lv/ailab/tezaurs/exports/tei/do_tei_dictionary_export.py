@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
+import sys
+
 from lv.ailab.tezaurs.dbobjects.entries import Entry
+from lv.ailab.tezaurs.dbobjects.sources import DictSource
 from lv.ailab.tezaurs.utils.dict.ili import IliMapping
 from lv.ailab.tezaurs.dbaccess.connection import db_connect
 from lv.ailab.tezaurs.dbaccess.db_config import db_connection_info
-from lv.ailab.tezaurs.dbaccess.overview_querries import get_dict_version, fetch_all_sources
+from lv.ailab.tezaurs.dbaccess.overview_querries import get_dict_version
 from lv.ailab.tezaurs.exports.tei.tei_output import TEIWriter
 from lv.ailab.tezaurs.exports.tei.whitelist import EntryWhitelist
-import sys
 
 
 # Major TODOs:
@@ -63,6 +65,6 @@ with open(filename, 'w', encoding='utf8') as out:
     except BaseException as err:
         print("Entry was: " + tei_printer.debug_entry_id)
         raise
-    tei_printer.print_back_matter(fetch_all_sources(connection))
+    tei_printer.print_back_matter(DictSource.fetch_all_sources(connection))
     tei_printer.print_tail(dict_version_data['dictionary'])
 print(f'Done! Output written to {filename}')

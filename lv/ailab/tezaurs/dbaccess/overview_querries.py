@@ -35,22 +35,6 @@ def get_dict_version(connection):
         'url': row.url}
 
 
-def fetch_all_sources(connection):
-    cursor = connection.cursor(cursor_factory=NamedTupleCursor)
-    sql_dict_sources = f"""
-        SELECT abbr, title, url
-        FROM {db_connection_info['schema']}.sources
-        ORDER BY abbr ASC
-    """
-    cursor.execute(sql_dict_sources)
-    while True:
-        rows = cursor.fetchmany(1000)
-        if not rows:
-            break
-        for row in rows:
-            yield {'abbr': row.abbr, 'title': row.title, 'url': row.url}
-
-
 def fetch_all_synseted_lexemes(connection):
     cursor = connection.cursor(cursor_factory=NamedTupleCursor)
     sql_synset_lexemes = f"""
