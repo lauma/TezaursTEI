@@ -23,9 +23,9 @@ def db_connect() -> DbConnection:
     return db_connection
 
 
-def query(sql, parameters, db_connection : DbConnection) -> list[NamedTuple]:
-    cursor = db_connection.cursor(cursor_factory=NamedTupleCursor)
-    cursor.execute(sql, parameters)
-    r = cursor.fetchall()
-    cursor.close()
-    return r
+#def query(sql, parameters, db_connection : DbConnection) -> list[NamedTuple]:
+#    cursor = db_connection.cursor(cursor_factory=NamedTupleCursor)
+#    cursor.execute(sql, parameters)
+#    r = cursor.fetchall()
+#    cursor.close()
+#    return r
