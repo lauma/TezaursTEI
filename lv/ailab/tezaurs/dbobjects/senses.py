@@ -13,29 +13,23 @@ from lv.ailab.tezaurs.dbaccess.subentry_queries import fetch_gloss_entry_links, 
 
 
 class Sense:
-    dbId : int
-    calculatedHumanId : str
-    orderNo : int
-    hidden : bool
-    gloss : str
-
-    synset : Synset = None
-    gram = None
-
-    examples = None
-    subsenses : list[Sense]
-    sources = None
-
-    semanticDerivatives = None
-    glossToEntryLinks = None
-    glossToSenseLinks = None
-
-
     def __init__(self, db_id, ord_no, gloss, hidden):
-        self.dbId = db_id
-        self.orderNo = ord_no
-        self.gloss = gloss
-        self.hidden = hidden
+        self.dbId: int = db_id
+        self.calculatedHumanId: Optional[str] = None
+        self.orderNo: int = ord_no
+        self.hidden: bool = hidden
+        self.gloss: str = gloss
+
+        self.synset: Optional[Synset] = None
+        self.gram = None
+
+        self.examples = None
+        self.subsenses: list[Sense] = []
+        self.sources = None
+
+        self.semanticDerivatives = None
+        self.glossToEntryLinks = None
+        self.glossToSenseLinks = None
 
 
     @staticmethod
@@ -118,19 +112,11 @@ class Sense:
 
 
 class Synset:
-    dbId : int
-    senses : list[Sense]
-    relations = None
-    gradset : Gradset
-    externalEqRelations = None
-    externalNeqRelations = None
-
-
     def __init__ (self, db_id, senses, relations, gradset, ext_eq_rels, ext_neq_rels = None):
-        self.dbId = db_id
-        self.senses = senses
+        self.dbId : int = db_id
+        self.senses : list[Sense] = senses
         self.relations = relations
-        self.gradset = gradset
+        self.gradset : Gradset = gradset
         self.externalEqRelations = ext_eq_rels
         self.externalNeqRelations = ext_neq_rels
 
@@ -164,15 +150,10 @@ class Synset:
 
 
 class Gradset:
-    dbId : int
-    category : str
-    memberIds : list[int]
-
-
     def __init__(self, db_id, gradset_category, member_synsets):
-        self.dbId = db_id
-        self.category = gradset_category
-        self.memberIds = member_synsets
+        self.dbId : int = db_id
+        self.category : str = gradset_category
+        self.memberIds : list[int] = member_synsets
 
 
     @staticmethod

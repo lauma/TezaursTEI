@@ -1,4 +1,4 @@
-from typing import Generator
+from typing import Generator, Optional
 
 from psycopg2.extras import NamedTupleCursor
 
@@ -11,30 +11,23 @@ from lv.ailab.tezaurs.dbobjects.senses import Sense
 
 
 class Entry:
-
-    dbId : int
-    hidde: bool
-
-    homonym : int
-    type = None
-    headword : str
-    etymology : str = None
-
-    gram = None
-
-    lexemes = None
-    senses : list[Sense] = None
-    examples = None
-    sources = None
-
-    morphoDerivatives = None
-
     def __init__(self, db_id, homonym, entry_type, headword, hidden):
-        self.dbId = db_id
-        self.homonym = homonym
-        self.type = entry_type
-        self.headword = headword
-        self.hidden = hidden
+        self.dbId : int = db_id
+        self.hidden : bool = hidden
+
+        self.homonym : int = homonym
+        self.type : str = entry_type
+        self.headword : str = headword
+        self.etymology : Optional[str] = None
+
+        self.gram = None
+
+        self.lexemes = None
+        self.senses: Optional[list[Sense]] = None
+        self.examples = None
+        self.sources = None
+
+        self.morphoDerivatives = None
 
     @staticmethod
     def fetch_all_entries(connection : DbConnection, omit_mwe : bool = False, omit_wordparts : bool = False,
