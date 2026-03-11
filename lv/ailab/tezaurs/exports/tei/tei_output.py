@@ -204,7 +204,7 @@ class TEIWriter(XMLWriter):
         self.end_document()
 
 
-    def print_back_matter(self, sources : Generator[DictSource]):
+    def print_back_matter(self, dictionary : str, sources : Generator[DictSource]):
         self.start_node('back', {})
         self.start_node('listBibl', {})
         for source in sources:
@@ -215,9 +215,10 @@ class TEIWriter(XMLWriter):
                                          {'id': source.abbreviation, 'url': source.url}, source_title)
             else:
                 self.do_simple_leaf_node('bibl', {'id': source.abbreviation}, source_title)
-        self.do_simple_leaf_node('bibl', {'id': 'MORPHO', 'url': 'https://github.com/LUMII-AILab/Morphology/'},
-                                 'Paikens P. et al. Morphological Analyzer and Synthesizer for Latvian. ' +
-                                 'Institute of Mathematics and Computer Science, University of Latvia, 2005-2026.')
+        if not dictionary.endswith('_wordforms') and (dictionary.startswith('ltg') or dictionary.startswith('tezaurs')):
+            self.do_simple_leaf_node('bibl', {'id': 'MORPHO', 'url': 'https://github.com/LUMII-AILab/Morphology/'},
+                                     'Paikens P. et al. Morphological Analyzer and Synthesizer for Latvian. ' +
+                                     'Institute of Mathematics and Computer Science, University of Latvia, 2005-2026.')
         self.end_node('listBibl')
         self.end_node('back')
 

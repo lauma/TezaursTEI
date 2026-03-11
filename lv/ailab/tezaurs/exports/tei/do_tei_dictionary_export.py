@@ -65,6 +65,6 @@ with open(filename, 'w', encoding='utf8') as out:
     except BaseException as err:
         print("Entry was: " + tei_printer.debug_entry_id)
         raise
-    tei_printer.print_back_matter(DictSource.fetch_all_sources(connection))
+    tei_printer.print_back_matter(dict_version_data['dictionary'], DictSource.fetch_all_sources(connection))
     tei_printer.print_tail(dict_version_data['dictionary'])
 print(f'Done! Output written to {filename}')
