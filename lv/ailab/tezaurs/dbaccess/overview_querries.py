@@ -78,21 +78,6 @@ ORDER BY l.lemma ASC
         print(f'lexemes: {counter}\r')
 
 
-def fetch_all_paradigms(connection):
-    result = {}
-    cursor = connection.cursor(cursor_factory=NamedTupleCursor)
-    sql_paradigms = f"""
-SELECT id, data as flags, human_key as paradigm
-FROM {db_connection_info['schema']}.paradigms
-ORDER BY human_key ASC
-"""
-    cursor.execute(sql_paradigms)
-    paradigm_data = cursor.fetchall()
-    for p in paradigm_data:
-        result[p.paradigm] = p.flags
-    return result
-
-
 def fetch_all_lexemes_with_paradigms_and_synsets(connection):
     cursor = connection.cursor(cursor_factory=NamedTupleCursor)
     sql_lexemes = f"""
